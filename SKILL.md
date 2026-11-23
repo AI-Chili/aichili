@@ -27,7 +27,7 @@ Use this skill whenever the user wants to generate text-to-video (`t2v`), image-
 | `minimax-h3-gmi` | MiniMax H3 | `t2v`, `i2v` | `4–15s` | `768P`, `2K` | Live quote via `POST /v1/generations/plan` |
 | `wan3.0-video` | Wan 3.0 | `t2v`, `i2v` | `2–30s` | `480P`, `720P`, `1080P` | Live quote via `POST /v1/generations/plan` |
 | `seedance-2.5` | Seedance 2.5 | `t2v`, `i2v` | `4–15s` | `480p`, `720p`, `1080p` | Live quote via `POST /v1/generations/plan` |
-| `avatar-talk` | Avatar Talk | `t2v`, `i2v` | `3–300s` | `768p` | `0.2` credits per `5` script units |
+| `avatar-talk` | Avatar Talk | `i2v` (`talk`, `photo`) | `3–300s` | `768p`, `source` | `0.2` cr / `5` script units (`+10` cr on `photo`) |
 
 ## PAYG Credit Packs & OnlyChili Cinema SSOT
 

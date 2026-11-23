@@ -22,9 +22,10 @@ export const H3_VDN_RATES_PER_SECOND = Object.freeze({
 export const AVATAR_TALK_PRICING = Object.freeze({
   creditsPerBlock: 0.2,
   blockUnits: 5,
+  photoBaseClipCredits: 10,
   minDurationSeconds: 3,
   maxDurationSeconds: 300,
-  resolutions: Object.freeze(["768p"])
+  resolutions: Object.freeze(["768p", "source"])
 });
 
 export const PUBLIC_MODELS = Object.freeze([
@@ -76,12 +77,12 @@ export const PUBLIC_MODELS = Object.freeze([
     modelId: "avatar-talk",
     displayName: "Avatar Talk",
     provider: "comfyui",
-    modes: Object.freeze(["t2v", "i2v"]),
+    modes: Object.freeze(["i2v"]),
     minDurationSeconds: 3,
     maxDurationSeconds: 300,
-    resolutions: Object.freeze(["768p"]),
+    resolutions: Object.freeze(["768p", "source"]),
     audio: true,
-    pricingSummary: "0.2 credits per 5 script units"
+    pricingSummary: "0.2 credits per 5 script units (+10 base credits on workflow 'photo')"
   })
 ]);
 
@@ -321,6 +322,7 @@ export function estimateCost({
   seconds = 15,
   resolution = "768p",
   modelId = "h3-vdn",
+  workflow = "talk",
   scriptUnits,
   freeSignupCreditsUsed = false,
   subscribers = 0,
@@ -332,19 +334,26 @@ export function estimateCost({
   let totalCredits;
   let rateBasis;
 
-  if (normalizedModel === "avatar-talk" && scriptUnits !== undefined) {
-    const units = Number(scriptUnits);
+  if (normalizedModel === "avatar-talk") {
+    const normalizedWf = String(workflow || "talk").trim().toLowerCase();
+    if (normalizedWf !== "talk" && normalizedWf !== "photo") {
+      throw new AiChiliError("INVALID_WORKFLOW", "avatar-talk workflow must be 'talk' or 'photo'.");
+    }
+    const units = scriptUnits !== undefined ? Number(scriptUnits) : Number(seconds) * 2.5;
     if (!Number.isFinite(units) || units <= 0) {
-      throw new AiChiliError("INVALID_SCRIPT_UNITS", "scriptUnits must be a positive number.");
+      throw new AiChiliError("INVALID_SCRIPT_UNITS", "scriptUnits (or seconds) must be a positive number.");
     }
     const blocks = Math.ceil(units / AVATAR_TALK_PRICING.blockUnits);
-    totalCredits = round(blocks * AVATAR_TALK_PRICING.creditsPerBlock, 3);
+    const baseClipCredits = normalizedWf === "photo" ? AVATAR_TALK_PRICING.photoBaseClipCredits : 0;
+    totalCredits = Math.ceil(blocks * AVATAR_TALK_PRICING.creditsPerBlock + baseClipCredits);
     rateBasis = {
       modelId: "avatar-talk",
+      workflow: normalizedWf,
       scriptUnits: units,
       blocks,
       creditsPerBlock: AVATAR_TALK_PRICING.creditsPerBlock,
-      blockUnits: AVATAR_TALK_PRICING.blockUnits
+      blockUnits: AVATAR_TALK_PRICING.blockUnits,
+      baseClipCredits
     };
   } else {
     const dur = Number(seconds);

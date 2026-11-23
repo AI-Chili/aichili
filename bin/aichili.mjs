@@ -20,8 +20,8 @@ Usage:
 
 Commands:
   models [--scope available|console] [--json]
-  estimate [--seconds 90] [--resolution 768p] [--model h3-vdn] [--script-units N] [--free-used]
-           [--subscribers N] [--sub-price 9.99] [--ppv-count N] [--ppv-price 4.99] [--json]
+  estimate [--seconds 90] [--resolution 768p] [--model h3-vdn] [--workflow talk|photo] [--script-units N]
+           [--free-used] [--subscribers N] [--sub-price 9.99] [--ppv-count N] [--ppv-price 4.99] [--json]
   credits [--api-key chili_sk_...] [--json]
   plan --model <id> --mode <t2v|i2v|t2i|i2i> --prompt "..." [--duration 15] [--resolution 768p]
        [--ratio 16:9] [--workflow general] [--seed N] [--upscale-4k] [--no-optimize-prompt] [--json]
@@ -227,7 +227,7 @@ async function main(argv) {
           for (const m of models) {
             const durRange = `${m.single_call_durations_min ?? "?"}-${m.single_call_durations_max ?? "?"}s`;
             const modes = Array.from(
-              new Set((m.workflows || []).flatMap((w) => w.modes || []))
+              new Set((m.workflows || []).filter((w) => !w.hidden).flatMap((w) => w.modes || []))
             ).join(",");
             lines.push(`  - ${m.model_id} (${m.display_name}) | provider=${m.provider} | ${durRange} | modes=${modes}`);
           }
@@ -241,6 +241,7 @@ async function main(argv) {
           seconds: parseOptionalNumber(flags["--seconds"], "--seconds") ?? 15,
           resolution: flags["--resolution"] ?? "768p",
           modelId: flags["--model"] ?? "h3-vdn",
+          workflow: flags["--workflow"],
           scriptUnits: parseOptionalNumber(flags["--script-units"], "--script-units"),
           freeSignupCreditsUsed: Boolean(flags["--free-used"]),
           subscribers: parseOptionalNumber(flags["--subscribers"], "--subscribers") ?? 0,

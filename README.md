@@ -112,7 +112,7 @@ node bin/aichili.mjs status <job_id> --json
 | `minimax-h3-gmi` | MiniMax H3 | `t2v`, `i2v` | `4–15s` | `768P`, `2K` | Yes | Live quote (`/v1/generations/plan`) |
 | `wan3.0-video` | Wan 3.0 | `t2v`, `i2v` | `2–30s` | `480P`, `720P`, `1080P` | Yes | Live quote (`/v1/generations/plan`) |
 | `seedance-2.5` | Seedance 2.5 | `t2v`, `i2v` | `4–15s` | `480p`, `720p`, `1080p` | Yes | Live quote (`/v1/generations/plan`) |
-| `avatar-talk` | Avatar Talk | `t2v`, `i2v` | `3–300s` | `768p` | Yes (Lip-Sync) | `0.2` credits per `5` script units |
+| `avatar-talk` | Avatar Talk | `i2v` (`talk`, `photo`) | `3–300s` | `768p`, `source` | Yes (Lip-Sync) | `0.2` cr / `5` script units (`+10` cr on `photo`) |
 
 ---
 
