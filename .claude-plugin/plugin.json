@@ -1,0 +1,23 @@
+{
+  "name": "aichili",
+  "version": "1.0.0",
+  "description": "Generate cinematic 15s-30s AI videos and lip-synced talking avatars with AI Chili (AIChili) REST API & MCP server, estimate PAYG credits, and project OnlyChili Cinema creator earnings.",
+  "author": {
+    "name": "AI Chili Inc.",
+    "email": "support@aichili.ai",
+    "url": "https://aichili.ai"
+  },
+  "homepage": "https://aichili.ai",
+  "repository": "https://github.com/AI-Chili/aichili",
+  "license": "MIT",
+  "keywords": [
+    "ai-video-generation",
+    "text-to-video",
+    "image-to-video",
+    "talking-avatar",
+    "mcp",
+    "mcp-server",
+    "onlychili"
+  ],
+  "mcpServers": "./.mcp.json"
+}

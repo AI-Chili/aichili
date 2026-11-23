@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AI-Chili/aichili",
+  "title": "AI Chili Video Generation Studio & API",
+  "description": "Generate 15s-30s AI videos & talking avatars via AI Chili REST API and estimate PAYG credit costs.",
+  "version": "1.0.0",
+  "websiteUrl": "https://aichili.ai",
+  "repository": {
+    "url": "https://github.com/AI-Chili/aichili",
+    "source": "github",
+    "id": "1468256015"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://aichili.ai/mcp"
+    }
+  ]
+}

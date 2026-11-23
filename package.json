@@ -1,0 +1,59 @@
+{
+  "name": "@aichili/mcp",
+  "version": "1.0.0",
+  "description": "Official CLI, stdio MCP server, and coding-agent skills for AI Chili (AIChili) cinematic AI video generation & OnlyChili Cinema",
+  "type": "module",
+  "mcpName": "io.github.AI-Chili/aichili",
+  "license": "MIT",
+  "homepage": "https://aichili.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AI-Chili/aichili.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AI-Chili/aichili/issues"
+  },
+  "author": "AI Chili Inc. <support@aichili.ai> (https://aichili.ai)",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "./src/client.mjs",
+  "exports": {
+    ".": "./src/client.mjs",
+    "./mcp": "./src/mcp.mjs"
+  },
+  "bin": {
+    "aichili": "./bin/aichili.mjs",
+    "aichili-mcp": "./bin/aichili-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "skills",
+    "SKILL.md",
+    "server.json",
+    "glama.json",
+    "gemini-extension.json",
+    ".mcp.json",
+    ".claude-plugin",
+    ".cursor-plugin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "keywords": [
+    "aichili",
+    "ai-chili",
+    "mcp",
+    "mcp-server",
+    "gemini-cli-extension",
+    "claude-code-plugin",
+    "ai-video-generation",
+    "text-to-video",
+    "image-to-video",
+    "talking-avatar",
+    "onlychili"
+  ]
+}
