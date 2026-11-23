@@ -12,6 +12,7 @@ import {
   FREE_SIGNUP_CREDITS,
   H3_VDN_RATES_PER_SECOND,
   ONLYCHILI_CINEMA,
+  PUBLIC_MODELS,
   USER_AGENT,
   VERSION,
   createGeneration,
@@ -351,8 +352,12 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
   assert.equal(gemini.version, "1.0.0");
   assert.equal(gemini.contextFileName, "SKILL.md");
   assert.equal(claudePlugin.version, "1.0.0");
+  assert.equal(claudePlugin.author.email, "sales@aichili.ai");
   assert.equal(claudeMarketplace.plugins[0].version, "1.0.0");
+  assert.equal(claudeMarketplace.owner.email, "sales@aichili.ai");
   assert.equal(cursorPlugin.version, "1.0.0");
+  assert.equal(cursorPlugin.author.email, "sales@aichili.ai");
+  assert.ok(pkg.author.includes("sales@aichili.ai"));
 
   const rootSkill = readFileSync(path.join(ROOT_DIR, "SKILL.md"), "utf8");
   const nestedSkill = readFileSync(path.join(ROOT_DIR, "skills", "aichili", "SKILL.md"), "utf8");
@@ -384,17 +389,28 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
   }
 });
 
-test("Live read-only smoke test against https://videoapi.aichili.ai/v1/registry verifies the 5 public models", async () => {
+test("Live read-only smoke test against https://videoapi.aichili.ai/v1/registry verifies the 5 public models and exact modes", async () => {
   const registry = await listModels();
   assert.ok(Array.isArray(registry?.models), "Expected models array from /v1/registry");
-  const ids = new Set(registry.models.map((m) => m.model_id));
-  for (const expectedId of [
-    "h3-vdn",
-    "minimax-h3-gmi",
-    "wan3.0-video",
-    "seedance-2.5",
-    "avatar-talk"
-  ]) {
-    assert.ok(ids.has(expectedId), `Expected live /v1/registry to contain '${expectedId}'`);
+  const byId = new Map(registry.models.map((m) => [m.model_id, m]));
+  for (const pub of PUBLIC_MODELS) {
+    const live = byId.get(pub.modelId);
+    assert.ok(live, `Expected live /v1/registry to contain '${pub.modelId}'`);
+    const liveModes = new Set();
+    for (const wf of live.workflows || []) {
+      if (!wf.hidden) {
+        for (const md of wf.modes || []) liveModes.add(md);
+      }
+    }
+    assert.deepEqual(
+      [...pub.modes].sort(),
+      [...liveModes].sort(),
+      `PUBLIC_MODELS modes drifted from live /v1/registry for ${pub.modelId}`
+    );
   }
+
+  const talkQuote = estimateCost({ modelId: "avatar-talk", workflow: "talk", scriptUnits: 25, freeSignupCreditsUsed: true });
+  assert.equal(talkQuote.totalCredits, 1);
+  const photoQuote = estimateCost({ modelId: "avatar-talk", workflow: "photo", scriptUnits: 25, freeSignupCreditsUsed: true });
+  assert.equal(photoQuote.totalCredits, 11);
 });

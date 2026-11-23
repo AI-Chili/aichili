@@ -79,11 +79,16 @@ export const MCP_TOOLS = Object.freeze([
         },
         model_id: {
           type: "string",
-          description: "Model ID ('h3-vdn' default or 'avatar-talk' when passing script_units)."
+          description: "Model ID ('h3-vdn' default or 'avatar-talk')."
+        },
+        workflow: {
+          type: "string",
+          enum: ["talk", "photo"],
+          description: "For avatar-talk: 'photo' adds +10 base-clip credits; 'talk' adds 0."
         },
         script_units: {
           type: "number",
-          description: "Script units for avatar-talk (billed at 0.2 credits per 5 script units)."
+          description: "Script units for avatar-talk (billed at 0.2 credits per 5 script units, plus +10 on workflow 'photo')."
         },
         free_signup_credits_used: {
           type: "boolean",
@@ -352,6 +357,7 @@ async function dispatchToolCall(params, { baseUrl, fetchImpl } = {}) {
             seconds: args.seconds,
             resolution: args.resolution,
             modelId: args.model_id ?? args.modelId,
+            workflow: args.workflow,
             scriptUnits: args.script_units ?? args.scriptUnits,
             freeSignupCreditsUsed: args.free_signup_credits_used ?? args.freeSignupCreditsUsed,
             subscribers: args.subscribers,
