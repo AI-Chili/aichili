@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "aichili": {
+      "type": "http",
+      "url": "https://aichili.ai/mcp"
+    }
+  }
+}

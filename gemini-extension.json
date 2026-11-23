@@ -1,0 +1,11 @@
+{
+  "name": "aichili",
+  "version": "1.0.0",
+  "description": "Generate cinematic AI videos and estimate PAYG credits with AI Chili (AIChili).",
+  "mcpServers": {
+    "aichili": {
+      "httpUrl": "https://aichili.ai/mcp"
+    }
+  },
+  "contextFileName": "SKILL.md"
+}

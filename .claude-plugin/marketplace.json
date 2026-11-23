@@ -1,0 +1,29 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "aichili-official",
+  "description": "Official Claude Code plugin marketplace for AI Chili (AIChili) cinematic AI video generation & OnlyChili Cinema",
+  "owner": {
+    "name": "AI Chili Inc.",
+    "email": "support@aichili.ai",
+    "url": "https://aichili.ai"
+  },
+  "plugins": [
+    {
+      "name": "aichili",
+      "source": "./",
+      "description": "Generate cinematic 15s-30s AI videos and lip-synced talking avatars with AI Chili (AIChili) REST API & MCP server, estimate PAYG credits, and project OnlyChili Cinema creator earnings.",
+      "version": "1.0.0",
+      "homepage": "https://aichili.ai",
+      "license": "MIT",
+      "keywords": [
+        "ai-video-generation",
+        "text-to-video",
+        "image-to-video",
+        "talking-avatar",
+        "mcp",
+        "mcp-server",
+        "onlychili"
+      ]
+    }
+  ]
+}
