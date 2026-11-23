@@ -413,4 +413,7 @@ test("Live read-only smoke test against https://videoapi.aichili.ai/v1/registry 
   assert.equal(talkQuote.totalCredits, 1);
   const photoQuote = estimateCost({ modelId: "avatar-talk", workflow: "photo", scriptUnits: 25, freeSignupCreditsUsed: true });
   assert.equal(photoQuote.totalCredits, 11);
+  const talkSecondsFallback = estimateCost({ modelId: "avatar-talk", seconds: 10, freeSignupCreditsUsed: true });
+  assert.equal(talkSecondsFallback.rateBasis.scriptUnits, 38);
+  assert.equal(talkSecondsFallback.totalCredits, 2);
 });

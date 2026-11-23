@@ -339,7 +339,7 @@ export function estimateCost({
     if (normalizedWf !== "talk" && normalizedWf !== "photo") {
       throw new AiChiliError("INVALID_WORKFLOW", "avatar-talk workflow must be 'talk' or 'photo'.");
     }
-    const units = scriptUnits !== undefined ? Number(scriptUnits) : Number(seconds) * 2.5;
+    const units = scriptUnits !== undefined ? Number(scriptUnits) : Number(seconds) * 3.8;
     if (!Number.isFinite(units) || units <= 0) {
       throw new AiChiliError("INVALID_SCRIPT_UNITS", "scriptUnits (or seconds) must be a positive number.");
     }
