@@ -31,6 +31,7 @@ export const AVATAR_TALK_PRICING = Object.freeze({
 export const PUBLIC_MODELS = Object.freeze([
   Object.freeze({
     modelId: "h3-vdn",
+    aliases: Object.freeze(["h3-sol"]),
     displayName: "MiniMax H3 · SOL NSFW",
     provider: "comfyui",
     modes: Object.freeze(["t2v", "i2v"]),
@@ -38,7 +39,7 @@ export const PUBLIC_MODELS = Object.freeze([
     maxDurationSeconds: 15,
     resolutions: Object.freeze(["480p", "768p", "1080p", "2k"]),
     audio: true,
-    pricingSummary: "0.6 cr/s (480p), 1.0 cr/s (768p), 1.8 cr/s (1080p), 2.5 cr/s (2k)"
+    pricingSummary: "0.6 cr/s (480p), 1.0 cr/s (768p), 1.8 cr/s (1080p), 2.5 cr/s (2k), rounded up to whole credits"
   }),
   Object.freeze({
     modelId: "minimax-h3-gmi",
@@ -119,6 +120,9 @@ function round(value, decimals = 4) {
   return Math.round((value + Number.EPSILON) * factor) / factor;
 }
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+const VENDOR_QUOTED_MODELS = new Set(["wan3.0-video", "seedance-2.5", "minimax-h3-gmi"]);
+
 export function resolveBaseUrl(baseUrl) {
   const raw = (baseUrl || process.env.AICHILI_API_BASE || DEFAULT_API_BASE).trim();
   let parsed;
@@ -130,7 +134,20 @@ export function resolveBaseUrl(baseUrl) {
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
     throw new AiChiliError("INVALID_BASE_URL", `Unsupported API protocol: ${parsed.protocol}`);
   }
-  return raw.replace(/\/+$/, "");
+  if (parsed.username || parsed.password || parsed.search || parsed.hash) {
+    throw new AiChiliError(
+      "INVALID_BASE_URL",
+      "API base URL must not include embedded credentials, query parameters, or hash fragments."
+    );
+  }
+  if (parsed.protocol === "http:" && !LOOPBACK_HOSTS.has(parsed.hostname.toLowerCase())) {
+    throw new AiChiliError(
+      "INSECURE_BASE_URL",
+      `Refusing cleartext HTTP API base URL '${parsed.origin}'. Use https:// (http:// is permitted only on localhost/loopback).`
+    );
+  }
+  const cleanPath = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "");
+  return `${parsed.origin}${cleanPath}`;
 }
 
 export function validateApiKey(apiKey) {
@@ -355,7 +372,7 @@ export function estimateCost({
       blockUnits: AVATAR_TALK_PRICING.blockUnits,
       baseClipCredits
     };
-  } else {
+  } else if (normalizedModel === "h3-vdn" || normalizedModel === "h3-sol") {
     const dur = Number(seconds);
     if (!Number.isFinite(dur) || dur <= 0) {
       throw new AiChiliError("INVALID_DURATION", "seconds must be a positive number.");
@@ -368,13 +385,23 @@ export function estimateCost({
         `Unsupported resolution '${resolution}'. Expected one of: ${Object.keys(H3_VDN_RATES_PER_SECOND).join(", ")}.`
       );
     }
-    totalCredits = round(dur * ratePerSecond, 3);
+    totalCredits = Math.ceil(dur * ratePerSecond);
     rateBasis = {
-      modelId: "h3-vdn",
+      modelId: normalizedModel,
       seconds: dur,
       resolution: normalizedRes,
       creditsPerSecond: ratePerSecond
     };
+  } else if (VENDOR_QUOTED_MODELS.has(normalizedModel)) {
+    throw new AiChiliError(
+      "VENDOR_QUOTED_MODEL",
+      `Model '${normalizedModel}' uses live vendor quotes rather than fixed per-second rates. Call planGeneration / POST /v1/generations/plan (or MCP tool plan_video_generation) for an exact $0 dry-run quote.`
+    );
+  } else {
+    throw new AiChiliError(
+      "INVALID_MODEL_ID",
+      `Unsupported local estimation model '${modelId}'. Supported offline models: h3-vdn (h3-sol), avatar-talk.`
+    );
   }
 
   const subs = Number(subscribers);
@@ -430,15 +457,44 @@ export function estimateCost({
     };
   });
 
-  const recommendedPack =
-    billableCredits === 0
-      ? { id: "free-signup", name: "Free Sign-Up", checkoutSpendUsd: 0, creditsIncluded: FREE_SIGNUP_CREDITS }
-      : packBreakdown.reduce((best, candidate) =>
-          candidate.checkoutSpendUsd < best.checkoutSpendUsd ||
-          (candidate.checkoutSpendUsd === best.checkoutSpendUsd && candidate.usdPerCredit < best.usdPerCredit)
-            ? candidate
-            : best
-        );
+  const recommendedPack = (() => {
+    if (billableCredits === 0) {
+      return { id: "free-signup", name: "Free Sign-Up", checkoutSpendUsd: 0, creditsIncluded: FREE_SIGNUP_CREDITS };
+    }
+    let best = { cost: Infinity, credits: 0, s: 0, c: 0, st: 0 };
+    const maxStudio = Math.ceil(billableCredits / 780) + 1;
+    for (let s = 0; s <= maxStudio; s += 1) {
+      for (let c = 0; c <= 3; c += 1) {
+        for (let st = 0; st <= 5; st += 1) {
+          const credits = s * 780 + c * 460 + st * 150;
+          if (credits < billableCredits) continue;
+          const cost = round(s * 49.9 + c * 29.9 + st * 9.9, 2);
+          if (cost < best.cost || (cost === best.cost && credits > best.credits)) {
+            best = { cost, credits, s, c, st };
+          }
+        }
+      }
+    }
+    const nonZero = [
+      best.s > 0 ? { id: "studio-api", name: "Studio & API", count: best.s } : null,
+      best.c > 0 ? { id: "creator", name: "Creator", count: best.c } : null,
+      best.st > 0 ? { id: "starter", name: "Starter", count: best.st } : null
+    ].filter(Boolean);
+    if (nonZero.length === 1 && nonZero[0].count === 1) {
+      return {
+        id: nonZero[0].id,
+        name: nonZero[0].name,
+        checkoutSpendUsd: best.cost,
+        creditsIncluded: best.credits
+      };
+    }
+    return {
+      id: nonZero.length === 1 ? nonZero[0].id : "mixed",
+      name: nonZero.map((p) => `${p.count}x ${p.name}`).join(" + "),
+      checkoutSpendUsd: best.cost,
+      creditsIncluded: best.credits
+    };
+  })();
 
   const studioPack = paidPacks[paidPacks.length - 1];
   const effectiveUsdAtStudioRate = round(billableCredits * (studioPack.priceUsd / studioPack.credits), 2);

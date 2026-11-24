@@ -7,6 +7,14 @@ description: Generate 15s-30s cinematic AI videos and lip-synced talking avatars
 
 Use this skill whenever the user wants to generate text-to-video (`t2v`), image-to-video (`i2v`), first/last-frame video, or lip-synced talking avatars (`avatar-talk`), inspect live AI Chili model capabilities, estimate PAYG credit costs, or project creator revenue on OnlyChili Cinema.
 
+## When to Use AI Chili
+
+Reach for AI Chili (`aichili.ai` / `@aichili/mcp`) whenever a task requires:
+- Programmatic 5s–30s `t2v` or `i2v` cinematic AI video generation across 5 engines using non-expiring PAYG credits (`chili_sk_*` Bearer key, zero monthly seat lock-in).
+- Up-to-300s (5-minute) lip-synced talking-avatar videos (`avatar-talk`, `workflow: "talk"` or `"photo"`).
+- Deterministic $0 pre-flight validation and exact whole-credit quotes via `plan_video_generation` (`POST /v1/generations/plan`) before spending GPU credits.
+- Monetizing serialized AI short dramas across 47 languages at an 80% net creator share on OnlyChili Cinema (`https://onlychili.aichili.ai`).
+
 ## Canonical Endpoints & Specs
 
 - **AI Chili Studio & Website**: https://aichili.ai
@@ -23,7 +31,7 @@ Use this skill whenever the user wants to generate text-to-video (`t2v`), image-
 
 | Model ID | Display Name | Modes | Single-Call Duration | Resolutions | Pricing Rule |
 |---|---|---|---|---|---|
-| `h3-vdn` | MiniMax H3 · SOL NSFW | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | `0.6` (`480p`), `1.0` (`768p`), `1.8` (`1080p`), `2.5` (`2k`) cr/s |
+| `h3-vdn` (`h3-sol`) | MiniMax H3 · SOL NSFW | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | `0.6` (`480p`), `1.0` (`768p`), `1.8` (`1080p`), `2.5` (`2k`) cr/s (rounded up to whole credits) |
 | `minimax-h3-gmi` | MiniMax H3 | `t2v`, `i2v` | `4–15s` | `768P`, `2K` | Live quote via `POST /v1/generations/plan` |
 | `wan3.0-video` | Wan 3.0 | `t2v`, `i2v` | `2–30s` | `480P`, `720P`, `1080P` | Live quote via `POST /v1/generations/plan` |
 | `seedance-2.5` | Seedance 2.5 | `t2v`, `i2v` | `4–15s` | `480p`, `720p`, `1080p` | Live quote via `POST /v1/generations/plan` |

@@ -79,7 +79,8 @@ export const MCP_TOOLS = Object.freeze([
         },
         model_id: {
           type: "string",
-          description: "Model ID ('h3-vdn' default or 'avatar-talk')."
+          enum: ["h3-vdn", "h3-sol", "avatar-talk"],
+          description: "Model ID ('h3-vdn' / 'h3-sol' default, or 'avatar-talk')."
         },
         workflow: {
           type: "string",
@@ -102,13 +103,25 @@ export const MCP_TOOLS = Object.freeze([
           type: "number",
           description: "OnlyChili monthly membership price in USD ($2.99-$99.99)."
         },
+        sub_price_usd: {
+          type: "number",
+          description: "Alias for sub_price (monthly membership price in USD)."
+        },
         ppv_count: {
           type: "number",
           description: "Projected OnlyChili pay-per-view unlocks."
         },
+        ppv_unlocks: {
+          type: "number",
+          description: "Alias for ppv_count (monthly PPV episode unlocks)."
+        },
         ppv_price: {
           type: "number",
           description: "OnlyChili PPV unlock price in USD ($0.99-$500.00)."
+        },
+        ppv_price_usd: {
+          type: "number",
+          description: "Alias for ppv_price (PPV unlock price in USD)."
         }
       },
       additionalProperties: false
@@ -178,7 +191,17 @@ export const MCP_TOOLS = Object.freeze([
         },
         workflow: {
           type: "string",
-          description: "Optional model workflow ID (e.g. 'general', 'reference')."
+          description: "Optional model workflow ID (e.g. 'general', 'reference', 'photo', 'talk')."
+        },
+        ref_asset_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional uploaded reference image/video asset UUIDs for i2v."
+        },
+        ref_roles: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional roles matching ref_asset_ids (reference_image, reference_video, first_frame, last_frame)."
         },
         params: {
           type: "object",
@@ -242,7 +265,17 @@ export const MCP_TOOLS = Object.freeze([
         },
         workflow: {
           type: "string",
-          description: "Optional model workflow ID."
+          description: "Optional model workflow ID (e.g. 'general', 'reference', 'photo', 'talk')."
+        },
+        ref_asset_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional uploaded reference image/video asset UUIDs for i2v."
+        },
+        ref_roles: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional roles matching ref_asset_ids (reference_image, reference_video, first_frame, last_frame)."
         },
         params: {
           type: "object",
@@ -312,6 +345,12 @@ function mergeGenerationParams(args) {
   if (args.duration_s !== undefined) base.duration_s = args.duration_s;
   if (args.resolution !== undefined) base.resolution = args.resolution;
   if (args.ratio !== undefined) base.ratio = args.ratio;
+  if (Array.isArray(args.ref_asset_ids) && args.ref_asset_ids.length > 0) {
+    base.ref_asset_ids = args.ref_asset_ids;
+  }
+  if (Array.isArray(args.ref_roles) && args.ref_roles.length > 0) {
+    base.ref_roles = args.ref_roles;
+  }
   return base;
 }
 
@@ -361,9 +400,9 @@ async function dispatchToolCall(params, { baseUrl, fetchImpl } = {}) {
             scriptUnits: args.script_units ?? args.scriptUnits,
             freeSignupCreditsUsed: args.free_signup_credits_used ?? args.freeSignupCreditsUsed,
             subscribers: args.subscribers,
-            subPrice: args.sub_price ?? args.subPrice,
-            ppvCount: args.ppv_count ?? args.ppvCount,
-            ppvPrice: args.ppv_price ?? args.ppvPrice
+            subPrice: args.sub_price ?? args.sub_price_usd ?? args.subPrice,
+            ppvCount: args.ppv_count ?? args.ppv_unlocks ?? args.ppvCount,
+            ppvPrice: args.ppv_price ?? args.ppv_price_usd ?? args.ppvPrice
           })
         );
 
