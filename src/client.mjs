@@ -357,8 +357,8 @@ export function estimateCost({
       throw new AiChiliError("INVALID_WORKFLOW", "avatar-talk workflow must be 'talk' or 'photo'.");
     }
     const units = scriptUnits !== undefined ? Number(scriptUnits) : Number(seconds) * 3.8;
-    if (!Number.isFinite(units) || units <= 0) {
-      throw new AiChiliError("INVALID_SCRIPT_UNITS", "scriptUnits (or seconds) must be a positive number.");
+    if (!Number.isFinite(units) || units <= 0 || units > 1_000_000) {
+      throw new AiChiliError("INVALID_SCRIPT_UNITS", "scriptUnits (or seconds) must be a finite number between 1 and 1,000,000.");
     }
     const blocks = Math.ceil(units / AVATAR_TALK_PRICING.blockUnits);
     const baseClipCredits = normalizedWf === "photo" ? AVATAR_TALK_PRICING.photoBaseClipCredits : 0;
@@ -374,8 +374,8 @@ export function estimateCost({
     };
   } else if (normalizedModel === "h3-vdn" || normalizedModel === "h3-sol") {
     const dur = Number(seconds);
-    if (!Number.isFinite(dur) || dur <= 0) {
-      throw new AiChiliError("INVALID_DURATION", "seconds must be a positive number.");
+    if (!Number.isFinite(dur) || dur <= 0 || dur > 86_400) {
+      throw new AiChiliError("INVALID_DURATION", "seconds must be a finite number between 1 and 86,400.");
     }
     const normalizedRes = String(resolution || "768p").trim().toLowerCase();
     const ratePerSecond = H3_VDN_RATES_PER_SECOND[normalizedRes];
@@ -462,16 +462,14 @@ export function estimateCost({
       return { id: "free-signup", name: "Free Sign-Up", checkoutSpendUsd: 0, creditsIncluded: FREE_SIGNUP_CREDITS };
     }
     let best = { cost: Infinity, credits: 0, s: 0, c: 0, st: 0 };
-    const maxStudio = Math.ceil(billableCredits / 780) + 1;
-    for (let s = 0; s <= maxStudio; s += 1) {
-      for (let c = 0; c <= 3; c += 1) {
-        for (let st = 0; st <= 5; st += 1) {
-          const credits = s * 780 + c * 460 + st * 150;
-          if (credits < billableCredits) continue;
-          const cost = round(s * 49.9 + c * 29.9 + st * 9.9, 2);
-          if (cost < best.cost || (cost === best.cost && credits > best.credits)) {
-            best = { cost, credits, s, c, st };
-          }
+    for (let c = 0; c <= 3; c += 1) {
+      for (let st = 0; st <= 5; st += 1) {
+        const rem = Math.max(0, billableCredits - c * 460 - st * 150);
+        const s = Math.ceil(rem / 780);
+        const credits = s * 780 + c * 460 + st * 150;
+        const cost = round(s * 49.9 + c * 29.9 + st * 9.9, 2);
+        if (cost < best.cost || (cost === best.cost && credits > best.credits)) {
+          best = { cost, credits, s, c, st };
         }
       }
     }

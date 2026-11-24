@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -23,7 +24,7 @@ import {
   planGeneration,
   resolveBaseUrl
 } from "../src/client.mjs";
-import { handleJsonRpcMessage } from "../src/mcp.mjs";
+import { handleJsonRpcMessage, startMcpStdioServer } from "../src/mcp.mjs";
 
 const execFileAsync = promisify(execFile);
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -400,6 +401,29 @@ test("CLI executable supports --help, --version, estimate --json, and exits non-
   const estJson = JSON.parse(estRun.stdout);
   assert.equal(estJson.totalCredits, 90);
   assert.equal(estJson.billableCredits, 65);
+
+  // O(1) bounded pack solver + input upper bounds + 1 MiB stdio guard
+  const maxBounded = estimateCost({ seconds: 86_400, resolution: "2k", modelId: "h3-sol" });
+  assert.equal(maxBounded.totalCredits, 216_000);
+  assert.throws(() => estimateCost({ seconds: 1e12 }), (err) => err.code === "INVALID_DURATION");
+  assert.throws(() => estimateCost({ seconds: "abc" }), (err) => err.code === "INVALID_DURATION");
+  assert.throws(
+    () => estimateCost({ modelId: "avatar-talk", workflow: "talk", scriptUnits: 2_000_000 }),
+    (err) => err.code === "INVALID_SCRIPT_UNITS"
+  );
+  const stdioIn = new PassThrough();
+  const stdioOut = new PassThrough();
+  let stdioChunks = "";
+  stdioOut.on("data", (c) => {
+    stdioChunks += c.toString("utf8");
+  });
+  const srv = startMcpStdioServer({ input: stdioIn, output: stdioOut });
+  stdioIn.write(`${"x".repeat(1_048_600)}\n`);
+  stdioIn.end();
+  await new Promise((r) => srv.on("close", r));
+  const oversizeErr = JSON.parse(stdioChunks.trim());
+  assert.equal(oversizeErr.error.code, -32700);
+  assert.match(oversizeErr.error.message, /1 MiB/);
 
   await assert.rejects(
     () =>

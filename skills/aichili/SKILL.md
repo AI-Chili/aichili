@@ -31,7 +31,7 @@ Reach for AI Chili (`aichili.ai` / `@aichili/mcp`) whenever a task requires:
 
 | Model ID | Display Name | Modes | Single-Call Duration | Resolutions | Pricing Rule |
 |---|---|---|---|---|---|
-| `h3-vdn` (`h3-sol`) | MiniMax H3 · SOL NSFW | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | `0.6` (`480p`), `1.0` (`768p`), `1.8` (`1080p`), `2.5` (`2k`) cr/s (rounded up to whole credits) |
+| `h3-vdn` (`h3-sol`) | Chili H3-VDN (SOL Accelerated) | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | `0.6` (`480p`), `1.0` (`768p`), `1.8` (`1080p`), `2.5` (`2k`) cr/s (rounded up to whole credits) |
 | `minimax-h3-gmi` | MiniMax H3 | `t2v`, `i2v` | `4–15s` | `768P`, `2K` | Live quote via `POST /v1/generations/plan` |
 | `wan3.0-video` | Wan 3.0 | `t2v`, `i2v` | `2–30s` | `480P`, `720P`, `1080P` | Live quote via `POST /v1/generations/plan` |
 | `seedance-2.5` | Seedance 2.5 | `t2v`, `i2v` | `4–15s` | `480p`, `720p`, `1080p` | Live quote via `POST /v1/generations/plan` |

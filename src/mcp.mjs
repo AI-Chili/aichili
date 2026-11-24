@@ -534,9 +534,22 @@ export function startMcpStdioServer({
   fetchImpl
 } = {}) {
   const rl = readline.createInterface({ input, crlfDelay: Infinity });
+  const MAX_STDIO_LINE_CHARS = 1_048_576;
   let pending = Promise.resolve();
 
   rl.on("line", (line) => {
+    if (line.length > MAX_STDIO_LINE_CHARS) {
+      pending = pending.then(() => {
+        output.write(
+          `${JSON.stringify({
+            jsonrpc: "2.0",
+            id: null,
+            error: { code: -32700, message: "Parse error: JSON-RPC line exceeds 1 MiB limit" }
+          })}\n`
+        );
+      });
+      return;
+    }
     const trimmed = line.trim();
     if (!trimmed) return;
 
