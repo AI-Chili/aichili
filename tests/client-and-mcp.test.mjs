@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { PassThrough } from "node:stream";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -20,9 +21,10 @@ import {
   getCredits,
   getGeneration,
   listModels,
-  planGeneration
+  planGeneration,
+  resolveBaseUrl
 } from "../src/client.mjs";
-import { handleJsonRpcMessage } from "../src/mcp.mjs";
+import { handleJsonRpcMessage, startMcpStdioServer } from "../src/mcp.mjs";
 
 const execFileAsync = promisify(execFile);
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -85,6 +87,32 @@ test("SSOT constants and estimateCost cover PAYG packs, h3-vdn, avatar-talk, and
     () => estimateCost({ seconds: 15, subscribers: 5, subPrice: 1.5 }),
     (err) => err instanceof AiChiliError && err.code === "INVALID_SUB_PRICE"
   );
+
+  // Whole-credit ceiling parity with services/control (5s @ 2k = 12.5 -> 13; 7s @ 480p = 4.2 -> 5)
+  assert.equal(estimateCost({ seconds: 5, resolution: "2k", freeSignupCreditsUsed: true }).totalCredits, 13);
+  assert.equal(estimateCost({ seconds: 7, resolution: "480p", freeSignupCreditsUsed: true }).totalCredits, 5);
+
+  // ADR-126 h3-sol alias support
+  const h3SolEst = estimateCost({ modelId: "h3-sol", seconds: 10, resolution: "768p", freeSignupCreditsUsed: true });
+  assert.equal(h3SolEst.totalCredits, 10);
+  assert.equal(h3SolEst.rateBasis.modelId, "h3-sol");
+
+  // Vendor-quoted engines must not silently price at h3-vdn rates
+  for (const vendorModel of ["wan3.0-video", "seedance-2.5", "minimax-h3-gmi"]) {
+    assert.throws(
+      () => estimateCost({ modelId: vendorModel, seconds: 10 }),
+      (err) => err instanceof AiChiliError && err.code === "VENDOR_QUOTED_MODEL"
+    );
+  }
+
+  // Bounded mixed-pack optimizer (925 cr -> 1x Studio + 1x Starter = $59.80, not 2x Studio = $99.80)
+  const mixed925 = estimateCost({ seconds: 925, resolution: "768p", freeSignupCreditsUsed: true });
+  assert.equal(mixed925.recommendedPack.checkoutSpendUsd, 59.8);
+  assert.equal(mixed925.recommendedPack.creditsIncluded, 930);
+
+  const mixed515 = estimateCost({ seconds: 540, resolution: "768p", freeSignupCreditsUsed: false });
+  assert.equal(mixed515.billableCredits, 515);
+  assert.equal(mixed515.recommendedPack.checkoutSpendUsd, 39.6);
 });
 
 test("API client rejects malformed chili_sk_ keys and path traversal jobIds before touching network", async () => {
@@ -170,6 +198,25 @@ test("API client rejects malformed chili_sk_ keys and path traversal jobIds befo
   });
   assert.equal(created.status, "queued");
   assert.equal(networkCalls, 2);
+
+  // resolveBaseUrl security hardening: block cleartext non-loopback HTTP, credentials, query, and hash
+  assert.throws(
+    () => resolveBaseUrl("http://videoapi.aichili.ai"),
+    (err) => err instanceof AiChiliError && err.code === "INSECURE_BASE_URL"
+  );
+  for (const badBase of [
+    "https://user:pass@videoapi.aichili.ai",
+    "https://videoapi.aichili.ai?evil=1",
+    "https://videoapi.aichili.ai#frag"
+  ]) {
+    assert.throws(
+      () => resolveBaseUrl(badBase),
+      (err) => err instanceof AiChiliError && err.code === "INVALID_BASE_URL"
+    );
+  }
+  assert.equal(resolveBaseUrl("http://127.0.0.1:8000/"), "http://127.0.0.1:8000");
+  assert.equal(resolveBaseUrl("http://localhost:8000/"), "http://localhost:8000");
+  assert.equal(resolveBaseUrl("http://[::1]:8000/"), "http://[::1]:8000");
 });
 
 test("MCP JSON-RPC handler and stdio binary support initialize, tools/list, estimate_video_cost, and error guards", async () => {
@@ -211,7 +258,62 @@ test("MCP JSON-RPC handler and stdio binary support initialize, tools/list, esti
     }
   });
   assert.equal(estimateRes.result.isError, false);
-  assert.equal(estimateRes.result.structuredContent.totalCredits, 37.5);
+  assert.equal(estimateRes.result.structuredContent.totalCredits, 38);
+
+  // Cross-transport MCP parity with https://aichili.ai/mcp: creator _usd/unlocks aliases & top-level ref_asset_ids
+  const estimateAliasRes = await handleJsonRpcMessage({
+    jsonrpc: "2.0",
+    id: 31,
+    method: "tools/call",
+    params: {
+      name: "estimate_video_cost",
+      arguments: {
+        model_id: "h3-sol",
+        seconds: 15,
+        resolution: "768p",
+        free_signup_credits_used: true,
+        subscribers: 10,
+        sub_price_usd: 9.99,
+        ppv_unlocks: 5,
+        ppv_price_usd: 4.99
+      }
+    }
+  });
+  assert.equal(estimateAliasRes.result.isError, false);
+  assert.equal(estimateAliasRes.result.structuredContent.onlyChiliProjection.creatorNetRevenueUsd, 99.88);
+
+  const planSchema = listRes.result.tools.find((t) => t.name === "plan_video_generation").inputSchema;
+  assert.ok(planSchema.properties.ref_asset_ids, "Expected top-level ref_asset_ids in plan_video_generation schema");
+  assert.ok(planSchema.properties.ref_roles, "Expected top-level ref_roles in plan_video_generation schema");
+
+  let capturedMcpPlanBody = null;
+  const mcpPlanRes = await handleJsonRpcMessage(
+    {
+      jsonrpc: "2.0",
+      id: 32,
+      method: "tools/call",
+      params: {
+        name: "plan_video_generation",
+        arguments: {
+          api_key: "chili_sk_validkey123456",
+          mode: "i2v",
+          model_id: "h3-sol",
+          prompt: "Character walks forward",
+          ref_asset_ids: ["00000000-0000-0000-0000-000000000001"],
+          ref_roles: ["reference_image"]
+        }
+      }
+    },
+    {
+      fetchImpl: async (_url, init) => {
+        capturedMcpPlanBody = JSON.parse(init.body);
+        return new Response(JSON.stringify({ total_credits: 15, total_duration_s: 15, segments: 1 }), { status: 200 });
+      }
+    }
+  );
+  assert.equal(mcpPlanRes.result.isError, false);
+  assert.deepEqual(capturedMcpPlanBody.params.ref_asset_ids, ["00000000-0000-0000-0000-000000000001"]);
+  assert.deepEqual(capturedMcpPlanBody.params.ref_roles, ["reference_image"]);
 
   const unknownToolRes = await handleJsonRpcMessage({
     jsonrpc: "2.0",
@@ -299,6 +401,29 @@ test("CLI executable supports --help, --version, estimate --json, and exits non-
   const estJson = JSON.parse(estRun.stdout);
   assert.equal(estJson.totalCredits, 90);
   assert.equal(estJson.billableCredits, 65);
+
+  // O(1) bounded pack solver + input upper bounds + 1 MiB stdio guard
+  const maxBounded = estimateCost({ seconds: 86_400, resolution: "2k", modelId: "h3-sol" });
+  assert.equal(maxBounded.totalCredits, 216_000);
+  assert.throws(() => estimateCost({ seconds: 1e12 }), (err) => err.code === "INVALID_DURATION");
+  assert.throws(() => estimateCost({ seconds: "abc" }), (err) => err.code === "INVALID_DURATION");
+  assert.throws(
+    () => estimateCost({ modelId: "avatar-talk", workflow: "talk", scriptUnits: 2_000_000 }),
+    (err) => err.code === "INVALID_SCRIPT_UNITS"
+  );
+  const stdioIn = new PassThrough();
+  const stdioOut = new PassThrough();
+  let stdioChunks = "";
+  stdioOut.on("data", (c) => {
+    stdioChunks += c.toString("utf8");
+  });
+  const srv = startMcpStdioServer({ input: stdioIn, output: stdioOut });
+  stdioIn.write(`${"x".repeat(1_048_600)}\n`);
+  stdioIn.end();
+  await new Promise((r) => srv.on("close", r));
+  const oversizeErr = JSON.parse(stdioChunks.trim());
+  assert.equal(oversizeErr.error.code, -32700);
+  assert.match(oversizeErr.error.message, /1 MiB/);
 
   await assert.rejects(
     () =>
@@ -392,10 +517,16 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
 test("Live read-only smoke test against https://videoapi.aichili.ai/v1/registry verifies the 5 public models and exact modes", async () => {
   const registry = await listModels();
   assert.ok(Array.isArray(registry?.models), "Expected models array from /v1/registry");
-  const byId = new Map(registry.models.map((m) => [m.model_id, m]));
+  const byId = new Map();
+  for (const m of registry.models) {
+    byId.set(m.model_id, m);
+    for (const alias of m.aliases || []) {
+      byId.set(alias, m);
+    }
+  }
   for (const pub of PUBLIC_MODELS) {
-    const live = byId.get(pub.modelId);
-    assert.ok(live, `Expected live /v1/registry to contain '${pub.modelId}'`);
+    const live = byId.get(pub.modelId) || (pub.aliases || []).map((a) => byId.get(a)).find(Boolean);
+    assert.ok(live, `Expected live /v1/registry to contain '${pub.modelId}' (or alias)`);
     const liveModes = new Set();
     for (const wf of live.workflows || []) {
       if (!wf.hidden) {
