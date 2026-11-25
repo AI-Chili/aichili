@@ -18,11 +18,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download official mcp-publisher CLI
+      - name: Download & verify pinned mcp-publisher v1.8.16 CLI
         run: |
+          set -euo pipefail
           mkdir -p /tmp/mcp-publisher
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" \
-            | tar -xz -C /tmp/mcp-publisher
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.16/mcp-publisher_linux_amd64.tar.gz" \
+            -o /tmp/mcp-publisher/mcp-publisher.tar.gz
+          echo "6e2f799550cf843c6fd3350498d56cc49be3dc0af1e6237eb0e6435c7a9d5c05  /tmp/mcp-publisher/mcp-publisher.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/mcp-publisher/mcp-publisher.tar.gz -C /tmp/mcp-publisher
           chmod +x /tmp/mcp-publisher/mcp-publisher
           /tmp/mcp-publisher/mcp-publisher --help
 
