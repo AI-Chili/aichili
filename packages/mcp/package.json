@@ -24,7 +24,7 @@
     "./client": "./src/client.mjs"
   },
   "bin": {
-    "aichili-mcp": "./bin/aichili-mcp.mjs"
+    "aichili-mcp": "bin/aichili-mcp.mjs"
   },
   "files": [
     "bin",

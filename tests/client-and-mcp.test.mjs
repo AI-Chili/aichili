@@ -573,14 +573,17 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   assert.equal(pkg.mcpName, "io.github.AI-Chili/aichili");
   assert.equal(pkg.dependencies, undefined);
   assert.equal(pkg.devDependencies, undefined);
-  assert.deepEqual(Object.keys(pkg.bin), ["aichili", "aichili-mcp"]);
+  assert.deepEqual(pkg.bin, {
+    aichili: "bin/aichili.mjs",
+    "aichili-mcp": "bin/aichili-mcp.mjs"
+  });
 
   assert.equal(mcpPkg.name, "@aichili/mcp");
   assert.equal(mcpPkg.version, VERSION);
   assert.equal(mcpPkg.mcpName, "io.github.AI-Chili/aichili");
   assert.equal(mcpPkg.dependencies, undefined);
   assert.equal(mcpPkg.devDependencies, undefined);
-  assert.deepEqual(Object.keys(mcpPkg.bin), ["aichili-mcp"]);
+  assert.deepEqual(mcpPkg.bin, { "aichili-mcp": "bin/aichili-mcp.mjs" });
   assert.equal(mcpPkg.repository.directory, "packages/mcp");
   assert.equal(mcpPkg.publishConfig.access, "public");
 
