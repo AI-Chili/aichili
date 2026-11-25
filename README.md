@@ -70,7 +70,11 @@ Stdio MCP configuration example:
 ### 3. Command-Line Interface (`aichili`)
 
 ```bash
-# Show CLI usage (via npx or local clone)
+# Install globally on macOS / Linux via Official Homebrew Tap
+brew install AI-Chili/tap/aichili
+aichili --version
+
+# Or run without installing via npx / local clone
 npx -y github:AI-Chili/aichili --help
 npx -y --package=github:AI-Chili/aichili aichili --help
 
