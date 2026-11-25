@@ -23,8 +23,8 @@
     "./mcp": "./src/mcp.mjs"
   },
   "bin": {
-    "aichili": "./bin/aichili.mjs",
-    "aichili-mcp": "./bin/aichili-mcp.mjs"
+    "aichili": "bin/aichili.mjs",
+    "aichili-mcp": "bin/aichili-mcp.mjs"
   },
   "files": [
     "bin",
