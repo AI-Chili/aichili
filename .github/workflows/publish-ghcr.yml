@@ -13,6 +13,10 @@ permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: publish-ghcr
+  cancel-in-progress: false
+
 jobs:
   publish-ghcr:
     name: Build, Push & Smoke-Test ghcr.io/ai-chili/aichili
@@ -64,7 +68,7 @@ jobs:
       - name: Verify multi-arch manifest, OCI MCP label & stdio JSON-RPC handshake
         run: |
           set -euo pipefail
-          manifest_out="$(docker buildx imagetools inspect "ghcr.io/ai-chili/aichili:${{ steps.meta.outputs.version }}")"
+          manifest_out="$(docker buildx imagetools inspect "ghcr.io/ai-chili/aichili:${EXPECTED_VERSION}")"
           echo "$manifest_out"
           echo "$manifest_out" | grep -q "linux/amd64"
           echo "$manifest_out" | grep -q "linux/arm64"
