@@ -1,4 +1,4 @@
-export const VERSION = "1.0.0";
+export const VERSION = "1.0.1";
 export const DEFAULT_API_BASE = "https://videoapi.aichili.ai";
 // Cloudflare on *.aichili.ai rejects bare language runtime User-Agents with HTTP 403 (error 1010) unless prefixed with curl/browser UA.
 export const USER_AGENT = `curl/8.4.0 aichili-mcp/${VERSION}`;

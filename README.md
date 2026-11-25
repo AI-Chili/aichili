@@ -1,4 +1,4 @@
-# AI Chili (`@aichili/mcp`) — Official CLI, MCP Server & Agent Skills
+# AI Chili (`aichili` & `@aichili/mcp`) — Official CLI, MCP Server & Agent Skills
 
 [![AI-Chili/aichili MCP server](https://glama.ai/mcp/servers/AI-Chili/aichili/badges/score.svg)](https://glama.ai/mcp/servers/AI-Chili/aichili)
 [![AI Chili MCP connector](https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili)
@@ -6,14 +6,14 @@
 
 `mcp-name: io.github.AI-Chili/aichili`
 
-Zero-dependency Node.js (`>=20.0.0`) CLI, stdio Model Context Protocol (MCP) server, and coding-agent plugin manifests for **[AI Chili (AIChili)](https://aichili.ai)** cinematic AI video generation and **[OnlyChili Cinema](https://onlychili.aichili.ai)** creator monetization.
+Zero-dependency Node.js (`>=20.0.0`) CLI ([`aichili` on npm](https://www.npmjs.com/package/aichili)), stdio Model Context Protocol (MCP) server ([`@aichili/mcp` on npm](https://www.npmjs.com/package/@aichili/mcp)), and coding-agent plugin manifests for **[AI Chili (AIChili)](https://aichili.ai)** cinematic AI video generation and **[OnlyChili Cinema](https://onlychili.aichili.ai)** creator monetization.
 
 <a href="https://glama.ai/mcp/servers/AI-Chili/aichili">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/AI-Chili/aichili/badges/card.svg" alt="AI Chili MCP server" />
 </a>
 
 - **Zero external npm dependencies** — built exclusively on Node.js standard library (`fetch`, `node:readline`, `node:test`) for supply-chain safety and instant startup.
-- **Remote & Local MCP ready** — connect directly to `https://aichili.ai/mcp` (Streamable HTTP) or run `aichili-mcp` locally over stdio with `AICHILI_API_KEY`.
+- **Remote & Local MCP ready** — connect directly to `https://aichili.ai/mcp` (Streamable HTTP) or run `npx -y @aichili/mcp` locally over stdio with `AICHILI_API_KEY`.
 - **Multi-agent native** — ships ready-to-install manifests for Official MCP Registry (`server.json`), Claude Code (`.claude-plugin/`), Cursor (`.cursor-plugin/`), Gemini CLI (`gemini-extension.json`), Glama (`glama.json`), and portable `SKILL.md`.
 
 ---
@@ -45,15 +45,17 @@ Or add to `.mcp.json` / `claude_desktop_config.json`:
 }
 ```
 
-### 2. Local Stdio MCP Server (`aichili-mcp`)
+### 2. Local Stdio MCP Server (`@aichili/mcp`)
 
 Use the local stdio MCP server to execute authenticated `chili_sk_...` wallet, dry-run planning, and video generation tools directly against `https://videoapi.aichili.ai`:
 
 ```bash
-# Run directly from GitHub via npx
+# Run directly via npm (npx)
+AICHILI_API_KEY="chili_sk_..." npx -y @aichili/mcp
+
+# Or from GitHub / local clone
 AICHILI_API_KEY="chili_sk_..." npx -y --package=github:AI-Chili/aichili aichili-mcp
 
-# Or from a local clone
 git clone https://github.com/AI-Chili/aichili.git
 cd aichili
 AICHILI_API_KEY="chili_sk_..." node bin/aichili-mcp.mjs
@@ -69,7 +71,7 @@ Stdio MCP configuration example:
   "mcpServers": {
     "aichili-local": {
       "command": "npx",
-      "args": ["-y", "--package=github:AI-Chili/aichili", "aichili-mcp"],
+      "args": ["-y", "@aichili/mcp"],
       "env": {
         "AICHILI_API_KEY": "chili_sk_your_key_here"
       }
@@ -81,26 +83,24 @@ Stdio MCP configuration example:
 ### 3. Command-Line Interface (`aichili`)
 
 ```bash
-# Install globally on macOS / Linux via Official Homebrew Tap
+# Run directly via npx or install globally from npm
+npx -y aichili models
+npm install -g aichili
+aichili --version
+
+# Or install on macOS / Linux via Official Homebrew Tap
 brew install AI-Chili/tap/aichili
 aichili --version
 
-# Or run without installing via npx / local clone
-npx -y github:AI-Chili/aichili --help
-npx -y --package=github:AI-Chili/aichili aichili --help
-
-# Inspect live models from https://videoapi.aichili.ai/v1/registry
-node bin/aichili.mjs models
-
 # Estimate PAYG credits & OnlyChili Cinema 80% creator net share
-node bin/aichili.mjs estimate --seconds 90 --resolution 768p --subscribers 50 --sub-price 9.99 --json
+aichili estimate --seconds 90 --resolution 768p --subscribers 50 --sub-price 9.99 --json
 
 # Check wallet balance, dry-run a quote, submit a generation, and poll status
 export AICHILI_API_KEY="chili_sk_..."
-node bin/aichili.mjs credits --json
-node bin/aichili.mjs plan --model h3-vdn --mode t2v --prompt "Rain-slick neon alley in Tokyo, slow dolly-in, stereo street ambience" --duration 15 --resolution 1080p --ratio 16:9
-node bin/aichili.mjs generate --model h3-vdn --mode t2v --prompt "Rain-slick neon alley in Tokyo, slow dolly-in, stereo street ambience" --duration 15 --resolution 1080p --ratio 16:9 --wait
-node bin/aichili.mjs status <job_id> --json
+aichili credits --json
+aichili plan --model h3-vdn --mode t2v --prompt "Rain-slick neon alley in Tokyo, slow dolly-in, stereo street ambience" --duration 15 --resolution 1080p --ratio 16:9
+aichili generate --model h3-vdn --mode t2v --prompt "Rain-slick neon alley in Tokyo, slow dolly-in, stereo street ambience" --duration 15 --resolution 1080p --ratio 16:9 --wait
+aichili status <job_id> --json
 ```
 
 ---
@@ -123,7 +123,7 @@ node bin/aichili.mjs status <job_id> --json
 
 | Model ID | Display Name | Modes | Single-Call Duration | Resolutions | Native Audio | Pricing |
 |---|---|---|---|---|---|---|
-| `h3-vdn` (`h3-sol`) | Chili H3-VDN (SOL Accelerated) | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | Yes (Stereo) | `0.6` / `1.0` / `1.8` / `2.5` cr/s |
+| `h3-vdn` | MiniMax H3 · SOL NSFW | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | Yes (Stereo) | `0.6` / `1.0` / `1.8` / `2.5` cr/s |
 | `minimax-h3-gmi` | MiniMax H3 | `t2v`, `i2v` | `4–15s` | `768P`, `2K` | Yes | Live quote (`/v1/generations/plan`) |
 | `wan3.0-video` | Wan 3.0 | `t2v`, `i2v` | `2–30s` | `480P`, `720P`, `1080P` | Yes | Live quote (`/v1/generations/plan`) |
 | `seedance-2.5` | Seedance 2.5 | `t2v`, `i2v` | `4–15s` | `480p`, `720p`, `1080p` | Yes | Live quote (`/v1/generations/plan`) |
@@ -148,6 +148,8 @@ node bin/aichili.mjs status <job_id> --json
 
 - **AI Chili Studio**: [https://aichili.ai](https://aichili.ai)
 - **Developer Docs & API Reference**: [https://aichili.ai/developers](https://aichili.ai/developers)
+- **npm CLI Package (`aichili`)**: [https://www.npmjs.com/package/aichili](https://www.npmjs.com/package/aichili)
+- **npm MCP Server (`@aichili/mcp`)**: [https://www.npmjs.com/package/@aichili/mcp](https://www.npmjs.com/package/@aichili/mcp)
 - **Model Catalog**: [https://aichili.ai/models](https://aichili.ai/models)
 - **AI Video Model Comparison**: [https://aichili.ai/compare](https://aichili.ai/compare)
 - **Interactive Credit & Creator Calculator**: [https://aichili.ai/calculator](https://aichili.ai/calculator)
@@ -158,9 +160,10 @@ node bin/aichili.mjs status <job_id> --json
 
 ## Security & Testing
 
-Run the full test suite (unit, CLI, stdio JSON-RPC MCP, manifest parity, and live read-only `/v1/registry` smoke check):
+Sync `@aichili/mcp` and run the full test suite (unit, CLI, stdio JSON-RPC MCP, `npm pack` + `npx` tarball smoke checks, `server.json` schema validation, and live read-only `/v1/registry` check):
 
 ```bash
+npm run sync:mcp
 npm test
 ```
 

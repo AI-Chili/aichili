@@ -1,7 +1,7 @@
 {
   "name": "aichili",
   "displayName": "AI Chili Video Generation Studio & API",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate cinematic 15s-30s AI videos and lip-synced talking avatars via AI Chili REST API & MCP, and estimate PAYG credit costs.",
   "author": {
     "name": "AI Chili Inc.",

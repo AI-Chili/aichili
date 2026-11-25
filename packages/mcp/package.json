@@ -1,0 +1,51 @@
+{
+  "name": "@aichili/mcp",
+  "version": "1.0.1",
+  "description": "Official zero-dependency stdio Model Context Protocol (MCP) server for AI Chili (AIChili) cinematic AI video generation & OnlyChili Cinema",
+  "type": "module",
+  "mcpName": "io.github.AI-Chili/aichili",
+  "license": "MIT",
+  "homepage": "https://aichili.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AI-Chili/aichili.git",
+    "directory": "packages/mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/AI-Chili/aichili/issues"
+  },
+  "author": "AI Chili Inc. <sales@aichili.ai> (https://aichili.ai)",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "main": "./src/mcp.mjs",
+  "exports": {
+    ".": "./src/mcp.mjs",
+    "./client": "./src/client.mjs"
+  },
+  "bin": {
+    "aichili-mcp": "./bin/aichili-mcp.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "aichili",
+    "ai-chili",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "ai-video-generation",
+    "text-to-video",
+    "image-to-video",
+    "talking-avatar",
+    "onlychili"
+  ]
+}
