@@ -1,8 +1,16 @@
 # AI Chili (`@aichili/mcp`) — Official CLI, MCP Server & Agent Skills
 
+[![AI-Chili/aichili MCP server](https://glama.ai/mcp/servers/AI-Chili/aichili/badges/score.svg)](https://glama.ai/mcp/servers/AI-Chili/aichili)
+[![AI Chili MCP connector](https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili)
+[![CI](https://github.com/AI-Chili/aichili/actions/workflows/ci.yml/badge.svg)](https://github.com/AI-Chili/aichili/actions/workflows/ci.yml)
+
 `mcp-name: io.github.AI-Chili/aichili`
 
 Zero-dependency Node.js (`>=20.0.0`) CLI, stdio Model Context Protocol (MCP) server, and coding-agent plugin manifests for **[AI Chili (AIChili)](https://aichili.ai)** cinematic AI video generation and **[OnlyChili Cinema](https://onlychili.aichili.ai)** creator monetization.
+
+<a href="https://glama.ai/mcp/servers/AI-Chili/aichili">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/AI-Chili/aichili/badges/card.svg" alt="AI Chili MCP server" />
+</a>
 
 - **Zero external npm dependencies** — built exclusively on Node.js standard library (`fetch`, `node:readline`, `node:test`) for supply-chain safety and instant startup.
 - **Remote & Local MCP ready** — connect directly to `https://aichili.ai/mcp` (Streamable HTTP) or run `aichili-mcp` locally over stdio with `AICHILI_API_KEY`.
@@ -49,6 +57,9 @@ AICHILI_API_KEY="chili_sk_..." npx -y --package=github:AI-Chili/aichili aichili-
 git clone https://github.com/AI-Chili/aichili.git
 cd aichili
 AICHILI_API_KEY="chili_sk_..." node bin/aichili-mcp.mjs
+
+# Or via Docker (non-root node:22-alpine stdio container)
+docker build -t aichili-mcp . && docker run -i --rm -e AICHILI_API_KEY aichili-mcp
 ```
 
 Stdio MCP configuration example:
@@ -112,7 +123,7 @@ node bin/aichili.mjs status <job_id> --json
 
 | Model ID | Display Name | Modes | Single-Call Duration | Resolutions | Native Audio | Pricing |
 |---|---|---|---|---|---|---|
-| `h3-vdn` | MiniMax H3 · SOL NSFW | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | Yes (Stereo) | `0.6` / `1.0` / `1.8` / `2.5` cr/s |
+| `h3-vdn` (`h3-sol`) | Chili H3-VDN (SOL Accelerated) | `t2v`, `i2v` | `5–15s` | `480p`, `768p`, `1080p`, `2k` | Yes (Stereo) | `0.6` / `1.0` / `1.8` / `2.5` cr/s |
 | `minimax-h3-gmi` | MiniMax H3 | `t2v`, `i2v` | `4–15s` | `768P`, `2K` | Yes | Live quote (`/v1/generations/plan`) |
 | `wan3.0-video` | Wan 3.0 | `t2v`, `i2v` | `2–30s` | `480P`, `720P`, `1080P` | Yes | Live quote (`/v1/generations/plan`) |
 | `seedance-2.5` | Seedance 2.5 | `t2v`, `i2v` | `4–15s` | `480p`, `720p`, `1080p` | Yes | Live quote (`/v1/generations/plan`) |
