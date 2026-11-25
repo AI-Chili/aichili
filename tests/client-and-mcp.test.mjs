@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile, spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import test from "node:test";
@@ -30,12 +31,117 @@ const execFileAsync = promisify(execFile);
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CLI_PATH = path.join(ROOT_DIR, "bin", "aichili.mjs");
 const MCP_BIN_PATH = path.join(ROOT_DIR, "bin", "aichili-mcp.mjs");
+const SYNC_SCRIPT_PATH = path.join(ROOT_DIR, "scripts", "sync-mcp-pkg.mjs");
+const MCP_PKG_DIR = path.join(ROOT_DIR, "packages", "mcp");
 
 function readJson(relPath) {
   return JSON.parse(readFileSync(path.join(ROOT_DIR, relPath), "utf8"));
 }
 
+function validateJsonSchema(value, schema, rootSchema, ptr = "$") {
+  if (!schema || typeof schema !== "object") return [];
+  if (schema.$ref) {
+    const refPath = schema.$ref.replace(/^#\//, "").split("/");
+    let resolved = rootSchema;
+    for (const seg of refPath) {
+      resolved = resolved?.[seg];
+    }
+    assert.ok(resolved, `Unresolved JSON Schema $ref: ${schema.$ref}`);
+    return validateJsonSchema(value, resolved, rootSchema, ptr);
+  }
+
+  const errors = [];
+
+  if (Array.isArray(schema.allOf)) {
+    for (const sub of schema.allOf) {
+      errors.push(...validateJsonSchema(value, sub, rootSchema, ptr));
+    }
+  }
+
+  if (Array.isArray(schema.anyOf)) {
+    const matched = schema.anyOf.some((sub) => validateJsonSchema(value, sub, rootSchema, ptr).length === 0);
+    if (!matched) {
+      errors.push(`${ptr}: failed all anyOf branches`);
+    }
+  }
+
+  if (schema.not) {
+    if (validateJsonSchema(value, schema.not, rootSchema, ptr).length === 0) {
+      errors.push(`${ptr}: matched forbidden 'not' schema`);
+    }
+  }
+
+  if ("const" in schema && value !== schema.const) {
+    errors.push(`${ptr}: expected const ${JSON.stringify(schema.const)}, got ${JSON.stringify(value)}`);
+  }
+
+  if (Array.isArray(schema.enum) && !schema.enum.includes(value)) {
+    errors.push(`${ptr}: ${JSON.stringify(value)} not in enum ${JSON.stringify(schema.enum)}`);
+  }
+
+  if (schema.type) {
+    const actualType = Array.isArray(value) ? "array" : value === null ? "null" : typeof value;
+    if (schema.type === "integer") {
+      if (!Number.isInteger(value)) errors.push(`${ptr}: expected integer, got ${actualType}`);
+    } else if (actualType !== schema.type) {
+      errors.push(`${ptr}: expected ${schema.type}, got ${actualType}`);
+      return errors;
+    }
+  }
+
+  if (typeof value === "string") {
+    if (typeof schema.minLength === "number" && value.length < schema.minLength) {
+      errors.push(`${ptr}: length ${value.length} < minLength ${schema.minLength}`);
+    }
+    if (typeof schema.maxLength === "number" && value.length > schema.maxLength) {
+      errors.push(`${ptr}: length ${value.length} > maxLength ${schema.maxLength}`);
+    }
+    if (typeof schema.pattern === "string" && !new RegExp(schema.pattern).test(value)) {
+      errors.push(`${ptr}: '${value}' does not match pattern ${schema.pattern}`);
+    }
+    if (schema.format === "uri") {
+      try {
+        new URL(value);
+      } catch {
+        errors.push(`${ptr}: '${value}' is not a valid URI`);
+      }
+    }
+  }
+
+  if (Array.isArray(value) && schema.items) {
+    value.forEach((item, idx) => {
+      errors.push(...validateJsonSchema(item, schema.items, rootSchema, `${ptr}[${idx}]`));
+    });
+  }
+
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    if (Array.isArray(schema.required)) {
+      for (const reqKey of schema.required) {
+        if (!(reqKey in value) || value[reqKey] === undefined) {
+          errors.push(`${ptr}: missing required property '${reqKey}'`);
+        }
+      }
+    }
+    if (schema.properties) {
+      for (const [propKey, propVal] of Object.entries(value)) {
+        if (propKey in schema.properties) {
+          errors.push(...validateJsonSchema(propVal, schema.properties[propKey], rootSchema, `${ptr}.${propKey}`));
+        } else if (schema.additionalProperties === false) {
+          errors.push(`${ptr}: unexpected property '${propKey}'`);
+        } else if (schema.additionalProperties && typeof schema.additionalProperties === "object") {
+          errors.push(
+            ...validateJsonSchema(propVal, schema.additionalProperties, rootSchema, `${ptr}.${propKey}`)
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
 test("SSOT constants and estimateCost cover PAYG packs, h3-vdn, avatar-talk, and OnlyChili 80% share", () => {
+  assert.equal(VERSION, "1.0.1");
   assert.equal(FREE_SIGNUP_CREDITS, 25);
   assert.deepEqual(
     CREDIT_PACKS.map((p) => [p.id, p.priceUsd, p.credits]),
@@ -384,10 +490,13 @@ test("MCP JSON-RPC handler and stdio binary support initialize, tools/list, esti
 
 test("CLI executable supports --help, --version, estimate --json, and exits non-zero on invalid args or missing key", async () => {
   const helpRun = await execFileAsync(process.execPath, [CLI_PATH, "--help"]);
-  assert.match(helpRun.stdout, /AI Chili Official CLI/);
+  assert.match(helpRun.stdout, /AI Chili Official CLI \(aichili v1\.0\.1\)/);
 
   const verRun = await execFileAsync(process.execPath, [CLI_PATH, "--version"]);
   assert.equal(verRun.stdout.trim(), VERSION);
+
+  const verJsonRun = await execFileAsync(process.execPath, [CLI_PATH, "--version", "--json"]);
+  assert.deepEqual(JSON.parse(verJsonRun.stdout), { name: "aichili", version: VERSION });
 
   const estRun = await execFileAsync(process.execPath, [
     CLI_PATH,
@@ -449,8 +558,9 @@ test("CLI executable supports --help, --version, estimate --json, and exits non-
   );
 });
 
-test("All agent registry manifests share version 1.0.0, zero npm deps, valid schemas, and required links", () => {
+test("All agent registry manifests share version 1.0.1, zero npm deps, valid live MCP server.schema.json, and zero @aichili/mcp drift", async () => {
   const pkg = readJson("package.json");
+  const mcpPkg = readJson("packages/mcp/package.json");
   const server = readJson("server.json");
   const glama = readJson("glama.json");
   const gemini = readJson("gemini-extension.json");
@@ -458,35 +568,81 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
   const claudeMarketplace = readJson(".claude-plugin/marketplace.json");
   const cursorPlugin = readJson(".cursor-plugin/plugin.json");
 
-  assert.equal(pkg.name, "@aichili/mcp");
-  assert.equal(pkg.version, "1.0.0");
+  assert.equal(pkg.name, "aichili");
+  assert.equal(pkg.version, VERSION);
   assert.equal(pkg.mcpName, "io.github.AI-Chili/aichili");
   assert.equal(pkg.dependencies, undefined);
   assert.equal(pkg.devDependencies, undefined);
+  assert.deepEqual(Object.keys(pkg.bin), ["aichili", "aichili-mcp"]);
+
+  assert.equal(mcpPkg.name, "@aichili/mcp");
+  assert.equal(mcpPkg.version, VERSION);
+  assert.equal(mcpPkg.mcpName, "io.github.AI-Chili/aichili");
+  assert.equal(mcpPkg.dependencies, undefined);
+  assert.equal(mcpPkg.devDependencies, undefined);
+  assert.deepEqual(Object.keys(mcpPkg.bin), ["aichili-mcp"]);
+  assert.equal(mcpPkg.repository.directory, "packages/mcp");
+  assert.equal(mcpPkg.publishConfig.access, "public");
+
+  // Verify sync-mcp-pkg.mjs --check reports zero drift
+  const syncCheck = await execFileAsync(process.execPath, [SYNC_SCRIPT_PATH, "--check"]);
+  assert.match(syncCheck.stdout, /in sync/);
 
   assert.equal(server.name, "io.github.AI-Chili/aichili");
-  assert.equal(server.version, "1.0.0");
+  assert.equal(server.version, VERSION);
   assert.ok(
     server.description.length <= 100,
     `server.json description must be <= 100 chars (got ${server.description.length})`
   );
   assert.match(server.repository.id, /^[0-9]+$/);
+  assert.equal(server.packages[0].registryType, "npm");
+  assert.equal(server.packages[0].registryBaseUrl, "https://registry.npmjs.org");
+  assert.equal(server.packages[0].identifier, "@aichili/mcp");
+  assert.equal(server.packages[0].version, VERSION);
+  assert.equal(server.packages[0].runtimeHint, "npx");
+  assert.equal(server.packages[0].transport.type, "stdio");
+  assert.equal(server.packages[0].environmentVariables[0].name, "AICHILI_API_KEY");
+  assert.equal(server.packages[0].environmentVariables[0].isRequired, false);
+  assert.equal(server.packages[0].environmentVariables[0].isSecret, true);
   assert.equal(server.remotes[0].url, "https://aichili.ai/mcp");
 
+  // Programmatically validate server.json against official MCP Registry server.schema.json
+  const schemaRes = await fetch(server.$schema);
+  assert.equal(schemaRes.status, 200);
+  const officialSchema = await schemaRes.json();
+  assert.deepEqual(validateJsonSchema(server, officialSchema, officialSchema), []);
+
+  // Negative controls for schema validator (must reject "latest" package version and >100-char description)
+  assert.ok(
+    validateJsonSchema(
+      { ...server, packages: [{ ...server.packages[0], version: "latest" }] },
+      officialSchema,
+      officialSchema
+    ).length > 0,
+    "Schema validator must reject package version 'latest'"
+  );
+  assert.ok(
+    validateJsonSchema({ ...server, description: "x".repeat(101) }, officialSchema, officialSchema).length > 0,
+    "Schema validator must reject description > 100 chars"
+  );
+
   assert.deepEqual(glama.maintainers, ["HongmingWang-Rabbit"]);
-  assert.equal(gemini.version, "1.0.0");
+  assert.equal(gemini.version, VERSION);
   assert.equal(gemini.contextFileName, "SKILL.md");
-  assert.equal(claudePlugin.version, "1.0.0");
+  assert.equal(claudePlugin.version, VERSION);
   assert.equal(claudePlugin.author.email, "sales@aichili.ai");
-  assert.equal(claudeMarketplace.plugins[0].version, "1.0.0");
+  assert.equal(claudeMarketplace.plugins[0].version, VERSION);
   assert.equal(claudeMarketplace.owner.email, "sales@aichili.ai");
-  assert.equal(cursorPlugin.version, "1.0.0");
+  assert.equal(cursorPlugin.version, VERSION);
   assert.equal(cursorPlugin.author.email, "sales@aichili.ai");
   assert.ok(pkg.author.includes("sales@aichili.ai"));
+  assert.ok(mcpPkg.author.includes("sales@aichili.ai"));
 
   const rootSkill = readFileSync(path.join(ROOT_DIR, "SKILL.md"), "utf8");
   const nestedSkill = readFileSync(path.join(ROOT_DIR, "skills", "aichili", "SKILL.md"), "utf8");
+  const mcpSkill = readFileSync(path.join(MCP_PKG_DIR, "SKILL.md"), "utf8");
   assert.equal(rootSkill, nestedSkill);
+  assert.equal(rootSkill, mcpSkill);
 
   for (const requiredSkillUrl of [
     "https://aichili.ai",
@@ -494,7 +650,9 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
     "https://aichili.ai/openapi.json",
     "https://aichili.ai/mcp",
     "https://aichili.ai/pricing.md",
-    "https://onlychili.aichili.ai/mcp"
+    "https://onlychili.aichili.ai/mcp",
+    "https://www.npmjs.com/package/aichili",
+    "https://www.npmjs.com/package/@aichili/mcp"
   ]) {
     assert.ok(rootSkill.includes(requiredSkillUrl), `SKILL.md missing ${requiredSkillUrl}`);
   }
@@ -509,6 +667,8 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
     "https://aichili.ai/for-creators",
     "https://aichili.ai/models",
     "https://onlychili.aichili.ai",
+    "https://www.npmjs.com/package/aichili",
+    "https://www.npmjs.com/package/@aichili/mcp",
     "https://glama.ai/mcp/servers/AI-Chili/aichili",
     "https://glama.ai/mcp/servers/AI-Chili/aichili/badges/score.svg",
     "https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili",
@@ -517,6 +677,11 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
     assert.ok(readme.includes(requiredReadmeUrl), `README.md missing ${requiredReadmeUrl}`);
   }
   assert.ok(readme.includes("docker build -t aichili-mcp ."), "README.md missing Docker quickstart");
+  assert.ok(readme.includes("npx -y @aichili/mcp"), "README.md missing @aichili/mcp npx quickstart");
+
+  const mcpReadme = readFileSync(path.join(MCP_PKG_DIR, "README.md"), "utf8");
+  assert.ok(mcpReadme.includes("mcp-name: io.github.AI-Chili/aichili"));
+  assert.ok(mcpReadme.includes("npx -y @aichili/mcp"));
 
   const dockerfile = readFileSync(path.join(ROOT_DIR, "Dockerfile"), "utf8");
   assert.match(dockerfile, /^FROM node:22-alpine/m);
@@ -525,8 +690,103 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
   assert.ok(dockerfile.includes('ENTRYPOINT ["node", "bin/aichili-mcp.mjs"]'));
 
   const dockerignore = readFileSync(path.join(ROOT_DIR, ".dockerignore"), "utf8");
-  for (const ignoredEntry of [".git", ".github", "tests", "node_modules", "*.log"]) {
+  for (const ignoredEntry of [".git", ".github", "packages", "scripts", "tests", "node_modules", "*.log"]) {
     assert.ok(dockerignore.split(/\r?\n/).includes(ignoredEntry), `.dockerignore missing ${ignoredEntry}`);
+  }
+
+  const registryWorkflow = readFileSync(
+    path.join(ROOT_DIR, ".github", "workflows", "publish-mcp-registry.yml"),
+    "utf8"
+  );
+  assert.ok(registryWorkflow.includes("mcp-publisher_linux_amd64.tar.gz"));
+  assert.ok(registryWorkflow.includes("login github-oidc"));
+  assert.ok(registryWorkflow.includes("mcp-publisher publish"));
+});
+
+test("npm pack tarballs for both unscoped 'aichili' and scoped '@aichili/mcp' resolve default executables via npx --yes", async () => {
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), "aichili-npm-pack-"));
+  const npxEnv = {
+    ...process.env,
+    AICHILI_API_KEY: "",
+    npm_config_cache: path.join(tmpDir, "npm-cache"),
+    npm_config_update_notifier: "false"
+  };
+
+  try {
+    const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+    const npxCmd = process.platform === "win32" ? "npx.cmd" : "npx";
+
+    const rootPackRun = await execFileAsync(
+      npmCmd,
+      ["pack", "--json", "--pack-destination", tmpDir],
+      { cwd: ROOT_DIR, env: npxEnv }
+    );
+    const rootPackInfo = JSON.parse(rootPackRun.stdout)[0];
+    assert.equal(rootPackInfo.filename, `aichili-${VERSION}.tgz`);
+
+    const mcpPackRun = await execFileAsync(
+      npmCmd,
+      ["pack", "--json", "--pack-destination", tmpDir],
+      { cwd: MCP_PKG_DIR, env: npxEnv }
+    );
+    const mcpPackInfo = JSON.parse(mcpPackRun.stdout)[0];
+    assert.equal(mcpPackInfo.filename, `aichili-mcp-${VERSION}.tgz`);
+
+    // 1. Verify `npx --yes ./aichili-1.0.1.tgz --version` resolves default `aichili` binary
+    const cliNpxRun = await execFileAsync(npxCmd, ["--yes", `./${rootPackInfo.filename}`, "--version"], {
+      cwd: tmpDir,
+      env: npxEnv
+    });
+    assert.equal(cliNpxRun.stdout.trim(), VERSION);
+
+    // 2. Verify `npx --yes ./aichili-mcp-1.0.1.tgz` resolves single `aichili-mcp` stdio binary
+    const mcpStdout = await new Promise((resolve, reject) => {
+      const child = spawn(npxCmd, ["--yes", `./${mcpPackInfo.filename}`], {
+        cwd: tmpDir,
+        env: npxEnv,
+        stdio: ["pipe", "pipe", "pipe"]
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk.toString("utf8");
+      });
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk.toString("utf8");
+      });
+      child.on("error", reject);
+      child.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`npx @aichili/mcp exited ${code}: ${stderr}`));
+        } else {
+          resolve(stdout);
+        }
+      });
+
+      child.stdin.write(
+        `${JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "npx-test", version: "1.0" } }
+        })}\n` +
+          `${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n` +
+          `${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "ping" })}\n`
+      );
+      child.stdin.end();
+    });
+
+    const frames = mcpStdout
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.equal(frames.length, 2);
+    assert.equal(frames[0].id, 1);
+    assert.equal(frames[0].result.serverInfo.name, "io.github.AI-Chili/aichili");
+    assert.equal(frames[0].result.serverInfo.version, VERSION);
+    assert.deepEqual(frames[1], { jsonrpc: "2.0", id: 2, result: {} });
+  } finally {
+    rmSync(tmpDir, { recursive: true, force: true });
   }
 });
 

@@ -9,7 +9,7 @@ Use this skill whenever the user wants to generate text-to-video (`t2v`), image-
 
 ## When to Use AI Chili
 
-Reach for AI Chili (`aichili.ai` / `@aichili/mcp`) whenever a task requires:
+Reach for AI Chili (`aichili.ai` / `aichili` / `@aichili/mcp`) whenever a task requires:
 - Programmatic 5s–30s `t2v` or `i2v` cinematic AI video generation across 5 engines using non-expiring PAYG credits (`chili_sk_*` Bearer key, zero monthly seat lock-in).
 - Up-to-300s (5-minute) lip-synced talking-avatar videos (`avatar-talk`, `workflow: "talk"` or `"photo"`).
 - Deterministic $0 pre-flight validation and exact whole-credit quotes via `plan_video_generation` (`POST /v1/generations/plan`) before spending GPU credits.
@@ -21,12 +21,13 @@ Reach for AI Chili (`aichili.ai` / `@aichili/mcp`) whenever a task requires:
 - **Developer Portal & Quickstart**: https://aichili.ai/developers
 - **OpenAPI Specification**: https://aichili.ai/openapi.json (live execution schema also served at `https://videoapi.aichili.ai/v1/openapi.json`)
 - **Remote Streamable-HTTP MCP**: https://aichili.ai/mcp
-- **Official CLI (Homebrew & GitHub)**: `brew install AI-Chili/tap/aichili` (`https://github.com/AI-Chili/homebrew-tap`) or `npx -y github:AI-Chili/aichili` (`https://github.com/AI-Chili/aichili`)
+- **Local Stdio MCP Server (npm)**: `npx -y @aichili/mcp` (https://www.npmjs.com/package/@aichili/mcp)
+- **Official CLI (npm & Homebrew)**: `npx -y aichili models` / `npm install -g aichili` (https://www.npmjs.com/package/aichili) or `brew install AI-Chili/tap/aichili` (`https://github.com/AI-Chili/homebrew-tap`)
 - **Pricing & PAYG Credit Sheet**: https://aichili.ai/pricing.md
 - **OnlyChili Cinema MCP**: https://onlychili.aichili.ai/mcp
 - **Video Execution REST Base**: `https://videoapi.aichili.ai`
 
-> **Cloudflare User-Agent Requirement**: Direct HTTP requests to `*.aichili.ai` must send a `curl/` or browser-prefixed `User-Agent` (for example `curl/8.4.0 aichili-mcp/1.0.0`). Bare runtime User-Agents (`python-urllib`, `node`, `Go-http-client`) are blocked by Cloudflare error 1010.
+> **Cloudflare User-Agent Requirement**: Direct HTTP requests to `*.aichili.ai` must send a `curl/` or browser-prefixed `User-Agent` (for example `curl/8.4.0 aichili-mcp/1.0.1`). Bare runtime User-Agents (`python-urllib`, `node`, `Go-http-client`) are blocked by Cloudflare error 1010.
 
 ## Public Video & Avatar Models (`GET /v1/registry`)
 

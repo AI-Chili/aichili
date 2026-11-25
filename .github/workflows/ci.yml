@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test:
-    name: Node 22 Test, Manifest & Docker Validation
+    name: Node 22 Test, Manifest, Tarball & Docker Validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,7 +25,10 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Run zero-dependency test suite & live registry smoke check
+      - name: Verify @aichili/mcp package sync has zero drift
+        run: node scripts/sync-mcp-pkg.mjs --check
+
+      - name: Run zero-dependency test suite, npm pack/npx & live registry smoke checks
         run: node --test tests/*.test.mjs
 
       - name: Build Docker image & run stdio JSON-RPC MCP smoke test
@@ -34,7 +37,7 @@ jobs:
           container_uid="$(docker run --rm --entrypoint id aichili-mcp:ci -u)"
           test "$container_uid" != "0"
           printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci-docker","version":"1.0.0"}}}' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci-docker","version":"1.0.1"}}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"ping"}' \
             '{"jsonrpc":"2.0","id":3,"method":"tools/list"}' \
@@ -47,6 +50,7 @@ jobs:
             assert.equal(frames[0].id, 1);
             assert.equal(frames[0].result.protocolVersion, "2025-06-18");
             assert.equal(frames[0].result.serverInfo.name, "io.github.AI-Chili/aichili");
+            assert.equal(frames[0].result.serverInfo.version, "1.0.1");
             assert.deepEqual(frames[1], { jsonrpc: "2.0", id: 2, result: {} });
             assert.equal(frames[2].id, 3);
             assert.equal(frames[2].result.tools.length, 7);

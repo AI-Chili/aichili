@@ -12,7 +12,7 @@ import {
 } from "../src/client.mjs";
 import { startMcpStdioServer } from "../src/mcp.mjs";
 
-const HELP_TEXT = `AI Chili Official CLI (@aichili/mcp v${VERSION})
+const HELP_TEXT = `AI Chili Official CLI (aichili v${VERSION})
 https://aichili.ai | https://aichili.ai/developers
 
 Usage:
@@ -196,7 +196,7 @@ async function main(argv) {
     const jsonMode = Boolean(flags["--json"]);
 
     if (flags["--version"] || flags["-v"]) {
-      printOutput({ name: "@aichili/mcp", version: VERSION }, jsonMode, () => VERSION);
+      printOutput({ name: "aichili", version: VERSION }, jsonMode, () => VERSION);
       return;
     }
 

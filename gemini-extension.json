@@ -1,6 +1,6 @@
 {
   "name": "aichili",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Generate cinematic AI videos and estimate PAYG credits with AI Chili (AIChili).",
   "mcpServers": {
     "aichili": {

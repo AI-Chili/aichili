@@ -1,5 +1,7 @@
 .git
 .github
+packages
+scripts
 tests
 node_modules
 *.log
