@@ -1,8 +1,9 @@
 FROM node:22-alpine
 
-LABEL org.opencontainers.image.title="AI Chili MCP Server (@aichili/mcp)" \
-      org.opencontainers.image.description="Official zero-dependency stdio MCP server for AI Chili video & talking-avatar generation" \
-      org.opencontainers.image.url="https://aichili.ai" \
+LABEL io.modelcontextprotocol.server.name="io.github.AI-Chili/aichili" \
+      org.opencontainers.image.title="AI Chili Official CLI & MCP Server" \
+      org.opencontainers.image.description="Official zero-dependency CLI and stdio MCP server for AI Chili (AIChili) cinematic AI video generation" \
+      org.opencontainers.image.url="https://aichili.ai/mcp" \
       org.opencontainers.image.source="https://github.com/AI-Chili/aichili" \
       org.opencontainers.image.licenses="MIT"
 

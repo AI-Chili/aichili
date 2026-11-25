@@ -36,6 +36,8 @@ jobs:
           docker build -t aichili-mcp:ci .
           container_uid="$(docker run --rm --entrypoint id aichili-mcp:ci -u)"
           test "$container_uid" != "0"
+          mcp_label="$(docker inspect --format '{{index .Config.Labels "io.modelcontextprotocol.server.name"}}' aichili-mcp:ci)"
+          test "$mcp_label" = "io.github.AI-Chili/aichili"
           printf '%s\n' \
             '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci-docker","version":"1.0.1"}}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \

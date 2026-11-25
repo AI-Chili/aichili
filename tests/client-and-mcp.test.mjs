@@ -679,6 +679,7 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   ]) {
     assert.ok(readme.includes(requiredReadmeUrl), `README.md missing ${requiredReadmeUrl}`);
   }
+  assert.ok(readme.includes("ghcr.io/ai-chili/aichili"), "README.md missing GHCR Docker quickstart");
   assert.ok(readme.includes("docker build -t aichili-mcp ."), "README.md missing Docker quickstart");
   assert.ok(readme.includes("npx -y @aichili/mcp"), "README.md missing @aichili/mcp npx quickstart");
 
@@ -690,7 +691,26 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   assert.match(dockerfile, /^FROM node:22-alpine/m);
   assert.match(dockerfile, /^WORKDIR \/app/m);
   assert.match(dockerfile, /^USER node/m);
+  assert.ok(dockerfile.includes('io.modelcontextprotocol.server.name="io.github.AI-Chili/aichili"'));
+  assert.ok(dockerfile.includes('org.opencontainers.image.title="AI Chili Official CLI & MCP Server"'));
+  assert.ok(
+    dockerfile.includes(
+      'org.opencontainers.image.description="Official zero-dependency CLI and stdio MCP server for AI Chili (AIChili) cinematic AI video generation"'
+    )
+  );
+  assert.ok(dockerfile.includes('org.opencontainers.image.url="https://aichili.ai/mcp"'));
+  assert.ok(dockerfile.includes('org.opencontainers.image.source="https://github.com/AI-Chili/aichili"'));
+  assert.ok(dockerfile.includes('org.opencontainers.image.licenses="MIT"'));
   assert.ok(dockerfile.includes('ENTRYPOINT ["node", "bin/aichili-mcp.mjs"]'));
+
+  const ghcrWorkflow = readFileSync(
+    path.join(ROOT_DIR, ".github", "workflows", "publish-ghcr.yml"),
+    "utf8"
+  );
+  assert.ok(ghcrWorkflow.includes("packages: write"));
+  assert.ok(ghcrWorkflow.includes("platforms: linux/amd64,linux/arm64"));
+  assert.ok(ghcrWorkflow.includes("ghcr.io/ai-chili/aichili:latest"));
+  assert.ok(ghcrWorkflow.includes("docker/build-push-action@v6"));
 
   const dockerignore = readFileSync(path.join(ROOT_DIR, ".dockerignore"), "utf8");
   for (const ignoredEntry of [".git", ".github", "packages", "scripts", "tests", "node_modules", "*.log"]) {
