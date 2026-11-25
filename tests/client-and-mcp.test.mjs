@@ -508,9 +508,25 @@ test("All agent registry manifests share version 1.0.0, zero npm deps, valid sch
     "https://aichili.ai/calculator",
     "https://aichili.ai/for-creators",
     "https://aichili.ai/models",
-    "https://onlychili.aichili.ai"
+    "https://onlychili.aichili.ai",
+    "https://glama.ai/mcp/servers/AI-Chili/aichili",
+    "https://glama.ai/mcp/servers/AI-Chili/aichili/badges/score.svg",
+    "https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili",
+    "https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili/badges/score.svg"
   ]) {
     assert.ok(readme.includes(requiredReadmeUrl), `README.md missing ${requiredReadmeUrl}`);
+  }
+  assert.ok(readme.includes("docker build -t aichili-mcp ."), "README.md missing Docker quickstart");
+
+  const dockerfile = readFileSync(path.join(ROOT_DIR, "Dockerfile"), "utf8");
+  assert.match(dockerfile, /^FROM node:22-alpine/m);
+  assert.match(dockerfile, /^WORKDIR \/app/m);
+  assert.match(dockerfile, /^USER node/m);
+  assert.ok(dockerfile.includes('ENTRYPOINT ["node", "bin/aichili-mcp.mjs"]'));
+
+  const dockerignore = readFileSync(path.join(ROOT_DIR, ".dockerignore"), "utf8");
+  for (const ignoredEntry of [".git", ".github", "tests", "node_modules", "*.log"]) {
+    assert.ok(dockerignore.split(/\r?\n/).includes(ignoredEntry), `.dockerignore missing ${ignoredEntry}`);
   }
 });
 

@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   test:
-    name: Node 22 Test & Manifest Validation
+    name: Node 22 Test, Manifest & Docker Validation
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -27,3 +27,27 @@ jobs:
 
       - name: Run zero-dependency test suite & live registry smoke check
         run: node --test tests/*.test.mjs
+
+      - name: Build Docker image & run stdio JSON-RPC MCP smoke test
+        run: |
+          docker build -t aichili-mcp:ci .
+          container_uid="$(docker run --rm --entrypoint id aichili-mcp:ci -u)"
+          test "$container_uid" != "0"
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci-docker","version":"1.0.0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"ping"}' \
+            '{"jsonrpc":"2.0","id":3,"method":"tools/list"}' \
+            | docker run -i --rm aichili-mcp:ci > /tmp/mcp-docker-out.jsonl
+          node --input-type=module -e '
+            import assert from "node:assert/strict";
+            import { readFileSync } from "node:fs";
+            const frames = readFileSync("/tmp/mcp-docker-out.jsonl", "utf8").trim().split("\n").map((line) => JSON.parse(line));
+            assert.equal(frames.length, 3);
+            assert.equal(frames[0].id, 1);
+            assert.equal(frames[0].result.protocolVersion, "2025-06-18");
+            assert.equal(frames[0].result.serverInfo.name, "io.github.AI-Chili/aichili");
+            assert.deepEqual(frames[1], { jsonrpc: "2.0", id: 2, result: {} });
+            assert.equal(frames[2].id, 3);
+            assert.equal(frames[2].result.tools.length, 7);
+          '

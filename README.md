@@ -1,8 +1,16 @@
 # AI Chili (`@aichili/mcp`) — Official CLI, MCP Server & Agent Skills
 
+[![AI-Chili/aichili MCP server](https://glama.ai/mcp/servers/AI-Chili/aichili/badges/score.svg)](https://glama.ai/mcp/servers/AI-Chili/aichili)
+[![AI Chili MCP connector](https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili/badges/score.svg)](https://glama.ai/mcp/connectors/io.github.AI-Chili/aichili)
+[![CI](https://github.com/AI-Chili/aichili/actions/workflows/ci.yml/badge.svg)](https://github.com/AI-Chili/aichili/actions/workflows/ci.yml)
+
 `mcp-name: io.github.AI-Chili/aichili`
 
 Zero-dependency Node.js (`>=20.0.0`) CLI, stdio Model Context Protocol (MCP) server, and coding-agent plugin manifests for **[AI Chili (AIChili)](https://aichili.ai)** cinematic AI video generation and **[OnlyChili Cinema](https://onlychili.aichili.ai)** creator monetization.
+
+<a href="https://glama.ai/mcp/servers/AI-Chili/aichili">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/AI-Chili/aichili/badges/card.svg" alt="AI Chili MCP server" />
+</a>
 
 - **Zero external npm dependencies** — built exclusively on Node.js standard library (`fetch`, `node:readline`, `node:test`) for supply-chain safety and instant startup.
 - **Remote & Local MCP ready** — connect directly to `https://aichili.ai/mcp` (Streamable HTTP) or run `aichili-mcp` locally over stdio with `AICHILI_API_KEY`.
@@ -49,6 +57,9 @@ AICHILI_API_KEY="chili_sk_..." npx -y --package=github:AI-Chili/aichili aichili-
 git clone https://github.com/AI-Chili/aichili.git
 cd aichili
 AICHILI_API_KEY="chili_sk_..." node bin/aichili-mcp.mjs
+
+# Or via Docker (non-root node:22-alpine stdio container)
+docker build -t aichili-mcp . && docker run -i --rm -e AICHILI_API_KEY aichili-mcp
 ```
 
 Stdio MCP configuration example:
