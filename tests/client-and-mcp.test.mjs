@@ -679,7 +679,10 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   ]) {
     assert.ok(readme.includes(requiredReadmeUrl), `README.md missing ${requiredReadmeUrl}`);
   }
-  assert.ok(readme.includes("ghcr.io/ai-chili/aichili"), "README.md missing GHCR Docker quickstart");
+  assert.ok(
+    readme.includes("docker build -t aichili-mcp https://github.com/AI-Chili/aichili.git"),
+    "README.md missing zero-clone Docker BuildKit quickstart"
+  );
   assert.ok(readme.includes("docker build -t aichili-mcp ."), "README.md missing Docker quickstart");
   assert.ok(readme.includes("npx -y @aichili/mcp"), "README.md missing @aichili/mcp npx quickstart");
 
