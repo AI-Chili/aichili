@@ -21,6 +21,7 @@ Reach for AI Chili (`aichili.ai` / `@aichili/mcp`) whenever a task requires:
 - **Developer Portal & Quickstart**: https://aichili.ai/developers
 - **OpenAPI Specification**: https://aichili.ai/openapi.json (live execution schema also served at `https://videoapi.aichili.ai/v1/openapi.json`)
 - **Remote Streamable-HTTP MCP**: https://aichili.ai/mcp
+- **Official CLI (Homebrew & GitHub)**: `brew install AI-Chili/tap/aichili` (`https://github.com/AI-Chili/homebrew-tap`) or `npx -y github:AI-Chili/aichili` (`https://github.com/AI-Chili/aichili`)
 - **Pricing & PAYG Credit Sheet**: https://aichili.ai/pricing.md
 - **OnlyChili Cinema MCP**: https://onlychili.aichili.ai/mcp
 - **Video Execution REST Base**: `https://videoapi.aichili.ai`
