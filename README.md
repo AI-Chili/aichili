@@ -60,7 +60,10 @@ git clone https://github.com/AI-Chili/aichili.git
 cd aichili
 AICHILI_API_KEY="chili_sk_..." node bin/aichili-mcp.mjs
 
-# Or build & run directly from GitHub via Docker BuildKit (zero clone needed)
+# Or via official public multi-arch Docker image on GHCR (zero clone needed)
+docker run -i --rm -e AICHILI_API_KEY="chili_sk_..." ghcr.io/ai-chili/aichili
+
+# Or build & run directly from GitHub via Docker BuildKit
 docker build -t aichili-mcp https://github.com/AI-Chili/aichili.git && docker run -i --rm -e AICHILI_API_KEY="chili_sk_..." aichili-mcp
 
 # Or build locally via Docker (non-root node:22-alpine stdio container)
