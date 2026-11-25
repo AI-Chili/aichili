@@ -3,7 +3,7 @@
   "name": "io.github.AI-Chili/aichili",
   "title": "AI Chili Video Generation Studio & API",
   "description": "Generate 15s-30s AI videos & talking avatars via AI Chili REST API and estimate PAYG credit costs.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "websiteUrl": "https://aichili.ai",
   "repository": {
     "url": "https://github.com/AI-Chili/aichili",
@@ -17,6 +17,23 @@
       "identifier": "@aichili/mcp",
       "version": "1.0.1",
       "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "AICHILI_API_KEY",
+          "description": "Optional AI Chili API key (chili_sk_...) for authenticated wallet, dry-run quote, and video generation tools.",
+          "format": "string",
+          "isRequired": false,
+          "isSecret": true,
+          "placeholder": "chili_sk_..."
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/ai-chili/aichili:1.0.1",
       "transport": {
         "type": "stdio"
       },

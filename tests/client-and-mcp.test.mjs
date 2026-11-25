@@ -592,12 +592,13 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   assert.match(syncCheck.stdout, /in sync/);
 
   assert.equal(server.name, "io.github.AI-Chili/aichili");
-  assert.equal(server.version, VERSION);
+  assert.equal(server.version, "1.0.2");
   assert.ok(
     server.description.length <= 100,
     `server.json description must be <= 100 chars (got ${server.description.length})`
   );
   assert.match(server.repository.id, /^[0-9]+$/);
+  assert.equal(server.packages.length, 2);
   assert.equal(server.packages[0].registryType, "npm");
   assert.equal(server.packages[0].registryBaseUrl, "https://registry.npmjs.org");
   assert.equal(server.packages[0].identifier, "@aichili/mcp");
@@ -607,6 +608,9 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   assert.equal(server.packages[0].environmentVariables[0].name, "AICHILI_API_KEY");
   assert.equal(server.packages[0].environmentVariables[0].isRequired, false);
   assert.equal(server.packages[0].environmentVariables[0].isSecret, true);
+  assert.equal(server.packages[1].registryType, "oci");
+  assert.equal(server.packages[1].identifier, `ghcr.io/ai-chili/aichili:${VERSION}`);
+  assert.equal(server.packages[1].transport.type, "stdio");
   assert.equal(server.remotes[0].url, "https://aichili.ai/mcp");
 
   // Programmatically validate server.json against official MCP Registry server.schema.json
