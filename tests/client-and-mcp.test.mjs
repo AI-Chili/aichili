@@ -731,6 +731,14 @@ test("All agent registry manifests share version 1.0.1, zero npm deps, valid liv
   assert.ok(registryWorkflow.includes("mcp-publisher_linux_amd64.tar.gz"));
   assert.ok(registryWorkflow.includes("login github-oidc"));
   assert.ok(registryWorkflow.includes("mcp-publisher publish"));
+
+  const npmWorkflow = readFileSync(
+    path.join(ROOT_DIR, ".github", "workflows", "publish-npm.yml"),
+    "utf8"
+  );
+  assert.ok(npmWorkflow.includes("id-token: write"));
+  assert.ok(npmWorkflow.includes("npm publish --provenance --access public"));
+  assert.ok(!npmWorkflow.includes("registry-url"), "setup-node must omit registry-url for native npm OIDC");
 });
 
 test("npm pack tarballs for both unscoped 'aichili' and scoped '@aichili/mcp' resolve default executables via npx --yes", async () => {
