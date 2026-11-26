@@ -1,0 +1,53 @@
+name: Publish to npm via Trusted Publisher OIDC
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish-npm:
+    name: Publish aichili & @aichili/mcp via GitHub OIDC
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24 (npm >= 11.6 OIDC Trusted Publishing)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Verify npm version, sync parity, release tag, and test suite
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          npm --version
+          pkg_version="$(node -p "JSON.parse(require('node:fs').readFileSync('package.json', 'utf8')).version")"
+          if [ "$EVENT_NAME" = "release" ]; then
+            tag_version="${REF_NAME#v}"
+            if [ "$tag_version" != "$pkg_version" ]; then
+              echo "::error::Release tag version ($tag_version) does not match package.json version ($pkg_version)"
+              exit 1
+            fi
+          fi
+          npm run sync:mcp -- --check
+          npm test
+
+      - name: Publish unscoped CLI package (aichili) with SLSA provenance
+        run: npm publish --provenance --access public
+
+      - name: Publish scoped MCP package (@aichili/mcp) with SLSA provenance
+        working-directory: packages/mcp
+        run: npm publish --provenance --access public
