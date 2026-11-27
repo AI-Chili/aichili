@@ -159,8 +159,15 @@ aichili status <job_id> --json
 - **Model Catalog**: [https://aichili.ai/models](https://aichili.ai/models)
 - **AI Video Model Comparison**: [https://aichili.ai/compare](https://aichili.ai/compare)
 - **Interactive Credit & Creator Calculator**: [https://aichili.ai/calculator](https://aichili.ai/calculator)
-- **For Creators & Filmmakers**: [https://aichili.ai/for-creators](https://aichili.ai/for-creators)
+- **AI Chili for Creators & Filmmakers**: [https://aichili.ai/for-creators](https://aichili.ai/for-creators)
+- **AI Chili vs AITube (`aitube.io` Alternative)**: [https://aichili.ai/vs/aitube](https://aichili.ai/vs/aitube)
+- **AI Chili vs Hollywood.AI (`hollywood.ai` Alternative)**: [https://aichili.ai/vs/hollywood-ai](https://aichili.ai/vs/hollywood-ai)
+- **All Platform Comparisons**: [https://aichili.ai/vs](https://aichili.ai/vs)
 - **OnlyChili Cinema**: [https://onlychili.aichili.ai](https://onlychili.aichili.ai)
+- **OnlyChili Series Directory (55+ AI Series in 47 Languages)**: [https://onlychili.aichili.ai/series](https://onlychili.aichili.ai/series)
+- **AI Chili 2K Sci-Fi & Cyberpunk Anthology (SFW Showcase)**: [https://onlychili.aichili.ai/playlists/b328568a-acd9-4c25-8aa0-1405087925a5](https://onlychili.aichili.ai/playlists/b328568a-acd9-4c25-8aa0-1405087925a5)
+- **AI Chili 2K Wuxia & Fantasy Animation (SFW Showcase)**: [https://onlychili.aichili.ai/playlists/a798c49f-a68b-4171-b54b-d0bc75c0c52b](https://onlychili.aichili.ai/playlists/a798c49f-a68b-4171-b54b-d0bc75c0c52b)
+- **OnlyChili Creator Monetization (80% Net Revenue Share)**: [https://onlychili.aichili.ai/creators](https://onlychili.aichili.ai/creators)
 
 ---
 
